@@ -557,3 +557,13 @@ h1.brand { margin: 0; line-height: 0; }
 .scal-cell.is-mine-night { background: #5f6bb5; border-color: #5f6bb5; }
 .scal-cell.is-mine-night.is-today .scal-d { color: #5f6bb5; }
 .lg-night { background: #5f6bb5; }
+/* 9/29 Naoto「夜も昼と同じ薄さに／祝日も赤字／下の日付も土日で色を」 */
+.scal-cell.is-mine-night { background: #e3e6f8; border-color: #8f98d8; }
+.scal-cell.is-mine-night .scal-d { color: var(--fg); }
+.scal-cell.is-mine-night .scal-d.sun { color: var(--ng); }
+.scal-cell.is-mine-night .scal-d.sat { color: var(--accent); }
+.scal-cell.is-mine-night.is-today .scal-d { background: var(--fg); color: var(--bg); }
+.lg-night { background: #e3e6f8; border: 1px solid #8f98d8; color: #2d3561; }
+.day-detail-date .sun { color: var(--ng); }
+.day-detail-date .sat { color: var(--accent); }
+.hol-name { margin-left: 6px; font-size: 12px; font-weight: 700; color: var(--ng); }
