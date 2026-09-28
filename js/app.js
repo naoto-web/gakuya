@@ -44,15 +44,47 @@ var APP = (function () {
     setTimeout(function () { el.remove(); }, isErr ? 5000 : 2400);
   }
 
+  // 「配信者として見る」の切り替え。選んだ人を覚えて開き直す（画面の状態を全部作り直すのが一番確実）
+  function setAs(name) {
+    try { if (name) localStorage.setItem(CONFIG.AS_LS, name); else localStorage.removeItem(CONFIG.AS_LS); } catch (e) { /* 覚えられない端末では切り替えない */ }
+    location.reload();
+  }
+
+  function renderViewAs(m) {
+    var box = document.getElementById('viewas');
+    var opts = function (cur) {
+      return m.members.map(function (x) { return '<option value="' + u.esc(x.name) + '"' + (x.name === cur ? ' selected' : '') + '>' + u.esc(x.name) + '</option>'; }).join('');
+    };
+    if (m.previewBy) {
+      // いま配信者の画面を見ている（管理者のプレビュー）
+      box.className = 'viewas is-preview';
+      box.innerHTML = '<span class="viewas-cap">配信者の画面</span>' +
+        '<select id="as-sel" class="date-input" aria-label="表示する配信者">' + opts(m.name) + '</select>' +
+        '<button type="button" class="btn btn-sm" id="as-back">管理者に戻る</button>';
+    } else if (m.role === 'admin') {
+      box.className = 'viewas';
+      box.innerHTML = '<span class="viewas-cap">配信者として見る</span>' +
+        '<select id="as-sel" class="date-input" aria-label="配信者として見る"><option value="">選ぶ…</option>' + opts('') + '</select>';
+    } else { box.hidden = true; return; }
+    box.hidden = false;
+    document.getElementById('as-sel').addEventListener('change', function (e) { if (e.target.value) setAs(e.target.value); });
+    var back = document.getElementById('as-back');
+    if (back) back.addEventListener('click', function () { setAs(''); });
+  }
+
   function boot() {
     KEYGATE.bind();
     if (!CONFIG.KEY) { KEYGATE.show(''); document.getElementById('view').innerHTML = ''; return; }
     API.me().then(function (m) {
       me = m;
-      document.getElementById('who-now').innerHTML = u.esc(m.name) + (m.role === 'admin' ? '<span class="pill dim">管理者</span>' : '');
+      document.getElementById('who-now').innerHTML = m.previewBy
+        ? u.esc(m.name) + '<span class="pill dim">として表示中</span>'
+        : u.esc(m.name) + (m.role === 'admin' ? '<span class="pill dim">管理者</span>' : '');
+      renderViewAs(m);
       render();
       SHIFT.init(m);
     }).catch(function (e) {
+      if (e.code === 'as') { setAs(''); return; }  // 覚えていた配信者が設定シートから消えた＝管理者に戻す
       if (e.code === 'key') { KEYGATE.show('このリンクは使えなくなっています。管理者に新しいリンクをもらってください。'); document.getElementById('view').innerHTML = ''; return; }
       document.getElementById('view').innerHTML = '<div class="card"><p>つながりませんでした。電波のよいところで開き直してください。</p><button type="button" class="btn" onclick="location.reload()">開き直す</button></div>';
     });
