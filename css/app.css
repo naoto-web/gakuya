@@ -706,3 +706,18 @@ h1.brand { margin: 0; line-height: 0; }
 .lc.is-me { background: var(--mc); color: var(--ink); font-weight: 700; box-shadow: none; }
 .lc.is-solo { border: 1.5px solid #5a5f69; background: #eceef1; color: #4a4f58; }
 .lc.is-empty { border: 1px dashed var(--line2); }
+/* 9/29 Naoto「本人の名前は太枠で」「選んでる日をもっとわかりやすく」 */
+.lc.is-me { border: 3px solid #23252a; line-height: 1.35; }
+/* 選んでいる行＝見ている人のメンバーカラーの薄い地＋左の太い線＋日付を大きく。下の詳細も同じ色の枠でつなげる */
+.dl-row.is-open {
+  background: color-mix(in srgb, var(--sel, var(--accent)) 16%, #ffffff);
+  box-shadow: inset 5px 0 0 var(--sel, var(--accent));
+  border-radius: 8px 8px 0 0;
+  border-top-color: transparent;
+}
+.dl-row.is-open .dl-d { font-size: 21px; }
+.dl-row.is-open + .day-detail {
+  margin: 0 0 8px; border: 2px solid var(--sel, var(--accent)); border-top: 0;
+  border-radius: 0 0 10px 10px; box-shadow: 0 4px 10px rgba(60, 50, 30, .12);
+}
+.dl-row.is-today:not(.is-open) { background: none; }
