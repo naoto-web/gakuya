@@ -629,4 +629,9 @@ h1.brand { margin: 0; line-height: 0; }
 .rb.kc-mid { background: color-mix(in srgb, var(--kc) 7%, #ffffff); border-color: var(--kc); }/* 9/29 Naoto「ミッドもどうにか薄色塗りたい」→黒を薄めると灰色になりナイターと同じに見えるので、
    ミッドだけ地を「深夜の空」の淡い紫にする（字と枠はコンソールと同じ黒のまま） */
 .rb.kc-mid { background: #ebe5f6; border-color: #6d6580; color: #2b2f36; }
+.rb.kc-mid .rb-g { color: #2b2f36; }/* 9/29 Naoto「ミッドとナイターの色、逆がいいかも」＝ナイター＝淡い紫の地（字は紺）／ミッド＝青みの灰色の地（字は黒） */
+.rb.kc-night { background: #ebe5f6; border-color: #7c7aa6; color: #1f3a68; }
+.rb.kc-night .rb-g { color: #1f3a68; }
+.rb.kc-mid { background: color-mix(in srgb, #1f3a68 22%, #ffffff); border-color: #2b2f36; color: #2b2f36; }
 .rb.kc-mid .rb-g { color: #2b2f36; }
+.rb .rb-g.is-g { color: #8a5d00; }
