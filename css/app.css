@@ -634,4 +634,8 @@ h1.brand { margin: 0; line-height: 0; }
 .rb.kc-night .rb-g { color: #1f3a68; }
 .rb.kc-mid { background: color-mix(in srgb, #1f3a68 22%, #ffffff); border-color: #2b2f36; color: #2b2f36; }
 .rb.kc-mid .rb-g { color: #2b2f36; }
-.rb .rb-g.is-g { color: #8a5d00; }
+.rb .rb-g.is-g { color: #8a5d00; }/* 今日の丸と夜Gが並ぶと日付が縮められて「29」の2が欠けた（411px幅）→日付は縮めない・札と余白を1pxずつ詰める */
+.scal-top { padding: 0 1px; }
+.scal-top .scal-d { flex-shrink: 0; }
+.scal-cell.is-today .scal-d { padding: 0 2px; }
+.scal-top .gb { padding: 2px 1px; letter-spacing: -.03em; }
