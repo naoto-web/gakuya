@@ -433,6 +433,11 @@ table.grid-t { border-collapse: collapse; font-size: 13px; width: 100%; }
 }
 
 /* ══════════ 本番版で足したもの（2026-09-29） ══════════ */
+/* 🔴hidden 属性を必ず効かせる。これが無いと .keygate の display:grid が hidden に勝ち、
+   鍵の入力画面が常にアプリの上にかぶさる（9/29 公開直後に発覚。試作はclaude.ai側がこの1行を持っていたので出なかった） */
+[hidden] { display: none !important; }
+body { margin: 0; }
+:root { padding-top: env(safe-area-inset-top, 0px); }
 .who-now { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 15px; }
 .who-now .pill { font-size: 11px; }
 
