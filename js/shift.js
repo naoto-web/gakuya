@@ -173,13 +173,16 @@ var SHIFT = (function () {
 
   // 全体＝1日1行の縦一覧。左＝日付（土青・日祝赤・グレード札）／昼の2人／夜の2人（メンバーカラーの札）
   //   行を押すと、その行のすぐ下に詳細（場の札など）が開く＝一覧の下に出すと画面の外になるため
-  function listChip(n, me) {
+  function listChip(n, me, date, slot) {
     if (!n) return '<span class="lc is-empty">未定</span>';
     if (n === '空き') return '<span class="lc is-solo">1人配信</span>';
     // 🔄9/29 Naoto「目がちかちかする」＝塗りつぶしをやめ、メンバーカラーは薄い地＋左の帯だけ（字は黒系）
     //   🔄同日「左の帯いらない・名前の枠は付けて・自分以外は薄塗り」＝全員に色の枠／自分だけ塗りつぶし（字は白か黒）
     var c = colorOf(n) || '#9aa0aa';
-    return '<span class="lc' + (n === me ? ' is-me' : '') + '" style="--mc:' + c + ';--ink:' + inkOn(c) + '">' + u.esc(n) + '</span>';
+    // 半休＝出られる側だけ塗る（9/29 Naoto「全体の一覧も同様に」）。自分＝塗りつぶし｜22%／他の人＝15%｜白地に斜線
+    var ng = st.data && st.data.half && st.data.half[date] && st.data.half[date][n];
+    var hb = u.slotHalfBg(ng, slot, n === me ? c : 'color-mix(in srgb, ' + c + ' 15%, #ffffff)', n === me ? 'color-mix(in srgb, ' + c + ' 22%, #ffffff)' : '');
+    return '<span class="lc' + (n === me ? ' is-me' : '') + '" style="--mc:' + c + ';--ink:' + inkOn(c) + (hb ? ';background:' + hb + ';color:#23252a' : '') + '">' + u.esc(n) + '</span>';
   }
   function dayList(rows, me, today) {
     return '<div class="card dl-card"' + (me && colorOf(me) ? ' style="--sel:' + colorOf(me) + '"' : '') + '>' +
@@ -190,8 +193,8 @@ var SHIFT = (function () {
         return '<button type="button" class="dl-row' + (r.date === today ? ' is-today' : '') + (open ? ' is-open' : '') + '" data-date="' + r.date + '" aria-expanded="' + open + '">' +
           '<span class="dl-date"><span class="dl-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span><span class="dl-w ' + dayClass(r.date) + '">' + u.DOW[dw] + '</span>' +
           (r.grade ? gradeBadge(r.grade) : '') + '</span>' +
-          '<span class="dl-slot dl-day">' + listChip(r.day[0], me) + listChip(r.day[1], me) + '</span>' +
-          '<span class="dl-slot dl-night">' + listChip(r.night[0], me) + listChip(r.night[1], me) + '</span>' +
+          '<span class="dl-slot dl-day">' + listChip(r.day[0], me, r.date, '昼') + listChip(r.day[1], me, r.date, '昼') + '</span>' +
+          '<span class="dl-slot dl-night">' + listChip(r.night[0], me, r.date, '夜') + listChip(r.night[1], me, r.date, '夜') + '</span>' +
           '</button>' + (open ? detail(r, me, today) : '');
       }).join('') + '</div>';
   }
