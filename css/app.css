@@ -820,3 +820,27 @@ button.name.is-edit:active { transform: translateY(1px); filter: brightness(.95)
 .we-seg .wk-b-note[aria-pressed="true"] { background: #6b6f77; color: #fff; }
 .we-memo { flex-basis: 100%; display: flex; gap: 6px; padding-left: 90px; }
 .we-memo input { flex: 1; min-width: 0; font-size: 16px; }
+/* ── 半休（9/29 Naoto「他→半」・1日を4分割してNGを選ぶ）── 半＝緑系（休の橙・撮影の紫と並べて見分けやすく） */
+:root { --half: #1d7f6e; }
+.wk-half { background: var(--half); }
+.wa-chip.wa-half b { color: var(--half); }
+.wl-half { background: color-mix(in srgb, var(--half) 14%, #ffffff); color: var(--half); font-weight: 700; }
+.we-seg .wk-b-half[aria-pressed="true"] { background: var(--half); color: #fff; }
+.we-seg { grid-template-columns: 0.9fr 0.9fr 1.5fr 1fr; }
+.we-half { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-left: 90px; box-sizing: border-box; }
+.we-cap { flex-basis: 100%; font-size: 11px; color: var(--fg-dim); }
+.we-q { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+/* 区分の色＝コンソールの開催区分（§91）。NGに選んだ所＝その色で塗って✕ */
+.q-btn { --kc: #1f7fd1; min-height: 36px; padding: 0 2px; font: inherit; font-size: 11px; font-weight: 700; border-radius: 7px; cursor: pointer;
+  border: 1.5px solid var(--kc); background: color-mix(in srgb, var(--kc) 10%, #ffffff); color: var(--kc); white-space: nowrap; overflow: hidden; }
+.q-btn.q-0 { --kc: #c0582a; } .q-btn.q-1 { --kc: #1f7fd1; } .q-btn.q-2 { --kc: #1f3a68; } .q-btn.q-3 { --kc: #2b2f36; }
+.q-btn[aria-pressed="true"] { background: var(--kc); color: #fff; }
+.q-btn[aria-pressed="true"]::before { content: '✕'; margin-right: 2px; }
+/* 9/29 撮影で見えた崩れの直し：件数欄の折り返し／4分割のボタンは1行まるごと使う（「モーニング」が切れるため） */
+.wa-sum { gap: 6px 8px; }
+.wa-sum-row { gap: 3px; }
+.wa-n { gap: 1px; white-space: nowrap; }
+.wk { padding: 0 3px; }
+.we-half { padding-left: 0; }
+.we-q { flex-basis: 100%; }
+.we-half .btn { flex: 1; }
