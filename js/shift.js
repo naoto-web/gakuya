@@ -272,10 +272,11 @@ var SHIFT = (function () {
   //   🔄同日 押すとその日の休み希望を直す板（希望がない日も「なし ✎」で出す＝足せる）
   function wishLine(date) {
     var w = (st.data.edit && st.data.edit.wish && st.data.edit.wish[date]) || {};
-    var names = Object.keys(w);
+    // 並び＝休→半→撮影（9/29 Naoto）。半休は「半 モ・デNG」の形で
+    var info = function (n) { return u.wishInfo(w[n]) || { k: 'half', label: w[n] }; };
+    var names = Object.keys(w).sort(function (a, b) { return u.WISH_ORDER[info(a).k] - u.WISH_ORDER[info(b).k]; });
     return '<button type="button" class="memo memo-btn wish-line" data-edit-wish="' + date + '">休み希望：' + (names.length ? names.map(function (n) {
-      var k = /撮影/.test(w[n]) ? 'shoot' : /休/.test(w[n]) ? 'off' : 'note';
-      return '<span class="wl wl-' + k + '">' + u.esc(n) + ' ' + u.esc(w[n]) + '</span>';
+      return '<span class="wl wl-' + info(n).k + '">' + u.esc(n) + ' ' + u.esc(info(n).label) + '</span>';
     }).join('') : '<span class="faint">なし</span>') + ' ✎</button>';
   }
 
