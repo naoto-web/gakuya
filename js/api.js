@@ -41,6 +41,7 @@ var API = (function () {
     setSlot: function (ym, date, slot, value, expect) { return post('set', { ym: ym, date: date, slot: slot, value: value, expect: expect }); },
     setMemo: function (ym, date, value, expect) { return post('memo', { ym: ym, date: date, value: value, expect: expect }); },
     lock: function (ym, date, slots, on, expect) { return post('lock', { ym: ym, date: date, slots: slots, on: on, expect: expect }); },
+    setWish: function (ym, date, name, value, expect) { return post('wish', { ym: ym, date: date, name: name, value: value, expect: expect }); },
     bulk: function (ym, op) { return post('bulk', { ym: ym, op: op }); }
   };
 })();
