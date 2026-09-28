@@ -227,11 +227,13 @@ var EDIT = (function () {
           var b = function (key, label) {
             return '<button type="button" data-wk="' + key + '" data-wn="' + u.esc(m.name) + '" aria-pressed="' + (k === key || (key === 'half' && editing === m.name)) + '" class="wk-btn wk-b-' + key + '">' + label + '</button>';
           };
-          // 札には「半 モデナ」のように頭文字だけ（全部書くと切れる）
-          var halfLabel = k === 'half' ? (info.ng ? '半 ' + info.ng.map(function (q) { return u.Q4S[q]; }).join('') : '半 ?') : '半';
+          // 札は「半」だけ。中身（例：ミッドのみ出勤）は行の下に出す（札に書くと切れる）
+          var halfLabel = '半';
           return '<div class="we-row"><span class="wa-who" style="--mc:' + (m.color || '#9aa0aa') + '">' + u.esc(m.name) + '</span>' +
             '<span class="seg we-seg">' + b('none', 'なし') + b('off', '休') + b('half', halfLabel) + b('shoot', '撮影') + '</span>' +
-            (editing === m.name ? '<div class="we-half"><span class="we-cap">出られない所</span><span class="we-q">' + u.Q4.map(function (q, i) {
+            (k === 'half' && editing !== m.name ? '<div class="we-say">' + u.esc(info.say) + '</div>' : '') +
+            (editing === m.name ? '<div class="we-half"><span class="we-cap">出られない所を押す' +
+              (pick.length ? '　→ <b>' + u.esc(pick.length === 4 ? '休（終日NG）' : u.halfSay(pick)) + '</b>' : '') + '</span><span class="we-q">' + u.Q4.map(function (q, i) {
               return '<button type="button" class="q-btn q-' + i + '" data-q="' + i + '" aria-pressed="' + (pick.indexOf(i) >= 0) + '">' + q + '</button>';
             }).join('') + '</span><button type="button" class="btn btn-sm" data-half-save="' + u.esc(m.name) + '">保存</button></div>' : '') + '</div>';
         }).join('') + '</div>' +
