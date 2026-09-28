@@ -156,8 +156,9 @@ var SHIFT = (function () {
     if (!n) return '<span class="lc is-empty">未定</span>';
     if (n === '空き') return '<span class="lc is-solo">1人配信</span>';
     // 🔄9/29 Naoto「目がちかちかする」＝塗りつぶしをやめ、メンバーカラーは薄い地＋左の帯だけ（字は黒系）
+    //   🔄同日「左の帯いらない・名前の枠は付けて・自分以外は薄塗り」＝全員に色の枠／自分だけ塗りつぶし（字は白か黒）
     var c = colorOf(n) || '#9aa0aa';
-    return '<span class="lc' + (n === me ? ' is-me' : '') + '" style="--mc:' + c + '">' + u.esc(n) + '</span>';
+    return '<span class="lc' + (n === me ? ' is-me' : '') + '" style="--mc:' + c + ';--ink:' + inkOn(c) + '">' + u.esc(n) + '</span>';
   }
   function dayList(rows, me, today) {
     return '<div class="card dl-card">' +
