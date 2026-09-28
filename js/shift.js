@@ -14,14 +14,64 @@ var SHIFT = (function () {
     return m ? m.limit : null;
   }
 
+  // ── 月ごとの控え（9/29 Naoto「月を変えたときの読み込み時間が長い」）──
+  //   GASへの問い合わせは1回2〜4秒かかる。①一度読んだ月は控え（メモリ＋端末）をすぐ出して、裏で最新を読み直す
+  //   ②最初に読めたら、表示する月（前月〜）を先に全部読んでおく＝切り替えた瞬間に出る。
+  //   控えは「鍵の頭6文字＋プレビュー中の人」ごと＝管理者の中身が配信者の画面に混ざらない。「〇時点」は控えの時刻
+  var mem = {};
+  var LS = 'gakuya:shift:';
+  function who() { return (CONFIG.KEY || '').slice(0, 6) + ':' + (CONFIG.AS || ''); }
+  function saveCache(d, at) {
+    if (!d || !d.ym) return;
+    mem[d.ym] = { d: d, at: at };
+    try {
+      localStorage.setItem(LS + who() + ':' + d.ym, JSON.stringify({ d: d, at: at.getTime() }));
+      localStorage.setItem(LS + who() + ':last', d.ym);
+    } catch (e) { /* 端末に置けなくてもメモリの控えは効く */ }
+  }
+  function readCache(ym) {
+    if (!ym) { try { ym = localStorage.getItem(LS + who() + ':last'); } catch (e) { ym = null; } }
+    if (!ym) return null;
+    if (mem[ym]) return mem[ym];
+    try {
+      var j = JSON.parse(localStorage.getItem(LS + who() + ':' + ym) || 'null');
+      if (j && j.d) return (mem[ym] = { d: j.d, at: new Date(j.at) });
+    } catch (e) { /* 壊れた控えは無視 */ }
+    return null;
+  }
+  function apply(d, at) {
+    st.data = d; st.ym = d.ym; st.fetchedAt = at; st.confirm = false;
+    if (!st.sel || u.ymOf(st.sel) !== d.ym) st.sel = d.ym && d.today && u.ymOf(d.today) === d.ym ? d.today : (d.rows[0] && d.rows[0].date);
+  }
+  var prefetched = false;
+  function prefetch(d) {
+    if (prefetched || !d || !d.months) return;
+    prefetched = true;
+    var from = u.addMonth(u.ymOf(d.today || u.ymd(new Date())), -1);
+    d.months.forEach(function (m) {
+      if (m.ym < from || m.ym === d.ym) return;
+      API.shift(m.ym).then(function (x) { saveCache(x, new Date()); }).catch(function () { /* 先読みの失敗は無視 */ });
+    });
+  }
+
   function load(ym) {
+    st.want = ym || null;
+    var c = readCache(ym);
+    if (c) apply(c.d, c.at);          // 控えがあれば先に出す
     st.loading = true; st.err = '';
     SHIFT.render();
     return API.shift(ym).then(function (d) {
-      st.data = d; st.ym = d.ym; st.fetchedAt = new Date(); st.confirm = false;
-      if (!st.sel || u.ymOf(st.sel) !== d.ym) st.sel = d.ym && d.today && u.ymOf(d.today) === d.ym ? d.today : (d.rows[0] && d.rows[0].date);
+      var at = new Date();
+      saveCache(d, at);
+      if (!st.want || st.want === d.ym) apply(d, at);  // 待っている間に別の月へ移っていたら上書きしない
+      prefetch(d);
     }).catch(function (e) {
-      st.err = e.code === 'not published' ? 'この月はまだ公開されていません' : '読み込めませんでした。電波のよいところで「最新にする」を押してください';
+      if (!st.data || (st.want && st.ym !== st.want)) {
+        st.err = e.code === 'not published' ? 'この月はまだ公開されていません' : '読み込めませんでした。電波のよいところで「最新にする」を押してください';
+        if (st.want && st.ym !== st.want) st.data = null;
+      } else {
+        APP.toast('最新を読めませんでした。' + u.pad(st.fetchedAt.getHours()) + ':' + u.pad(st.fetchedAt.getMinutes()) + '時点を表示しています', true);
+      }
     }).then(function () { st.loading = false; SHIFT.render(); });
   }
 
@@ -231,6 +281,7 @@ var SHIFT = (function () {
       q('#pub-yes').disabled = true;
       API.publish(st.ym, on).then(function (d) {
         st.data = d; st.confirm = false;
+        saveCache(d, new Date());
         APP.toast(on ? u.monthLabel(d.ym) + 'を配信者に公開しました' : u.monthLabel(d.ym) + 'を非公開に戻しました');
         render(el);
       }).catch(function () {
