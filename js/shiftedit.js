@@ -283,6 +283,9 @@ var EDIT = (function () {
     { op: 'autofill', label: '🤖自動入力', desc: '空欄のうち、入れる人が1人しかいない枠を埋めます（確定にはしません）' },
     { op: 'sort', label: '🔃並び替え', desc: '各日の①②を設定シートの並び順にそろえます' },
     { op: 'reset', label: '🧹確定以外を消す', desc: '🔒確定していない名前を全部消します（あとで戻せます）', danger: true },
+    { op: 'reset_all', label: '💣全部消す（確定も）', desc: '🔒確定した枠も含めて、この月の名前を全部消します（メモと休み希望は残ります・あとで戻せます）', danger: true,
+      warn: '🔒確定した枠も消えます。' },
+    { op: 'reset_all_undo', label: '↩️直前の全部消すを戻す', desc: '消した名前と🔒確定を、いま空欄の枠にだけ戻します', undo: 'resetAll' },
     { op: 'autofill_undo', label: '↩️直前の自動入力を戻す', desc: '自動で入れた枠のうち、まだそのままの枠を空欄に戻します', undo: 'autofill' },
     { op: 'reset_undo', label: '↩️直前のリセットを戻す', desc: '消した名前を、いま空欄の枠にだけ戻します', undo: 'reset' }
   ];
@@ -301,7 +304,7 @@ var EDIT = (function () {
           var o = OPS.filter(function (x) { return x.op === b.dataset.op; })[0];
           if (pending) { APP.toast('保存中です。終わってからもう一度押してください', true); return; }
           box.hidden = false;
-          box.innerHTML = '<p><b>' + o.label + '</b>を' + u.monthLabel(d.ym) + 'に実行しますか？</p>' +
+          box.innerHTML = '<p><b>' + o.label + '</b>を' + u.monthLabel(d.ym) + 'に実行しますか？' + (o.warn ? '<br><b class="danger-note">' + o.warn + '</b>' : '') + '</p>' +
             '<div class="btn-row"><button type="button" class="btn ghost" id="op-no">やめる</button><button type="button" class="btn" id="op-yes">実行する</button></div>';
           box.querySelector('#op-no').addEventListener('click', function () { box.hidden = true; });
           box.querySelector('#op-yes').addEventListener('click', function () {
@@ -313,7 +316,7 @@ var EDIT = (function () {
               H.applyServer(x);
               H.render();
               var n = x.bulk ? x.bulk.count : 0;
-              var DONE = { autofill: n + '枠を埋めました', sort: n + 'か所を入れ替えました', reset: n + '枠を消しました' };
+              var DONE = { autofill: n + '枠を埋めました', sort: n + 'か所を入れ替えました', reset: n + '枠を消しました', reset_all: n + '枠を消しました' };
               APP.toast(o.label + '：' + (DONE[o.op] || n + '枠を戻しました'));
             }).catch(function () {
               close();
