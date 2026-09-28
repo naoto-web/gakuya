@@ -639,3 +639,27 @@ h1.brand { margin: 0; line-height: 0; }
 .scal-top .scal-d { flex-shrink: 0; }
 .scal-cell.is-today .scal-d { padding: 0 2px; }
 .scal-top .gb { padding: 2px 1px; letter-spacing: -.03em; }
+/* 9/29 Naoto「一人配信って分かるように」＝詳細は濃い灰の「1人配信」札・マスの「1人」も同じ濃い灰 */
+.name.is-solo { background: #5a5f69; color: #ffffff; border: 0; font-weight: 700; }
+.pc.is-solo { background: #5a5f69; color: #ffffff; border: 0; line-height: 1.6; }
+
+/* 見出しの横の［個人｜全体］ */
+.seg-mode { display: inline-flex; padding: 2px; margin-right: auto; margin-left: 8px; }
+.seg-mode button { padding: 3px 12px; font-size: 13px; }
+
+/* 全体モードのマス：上＝昼（薄い黄）・下＝夜（淡い藍）の2段、入っている人をメンバーカラーの四角で */
+.scal-body.is-all { flex-direction: column; align-items: stretch; justify-content: flex-end; gap: 2px; padding: 0 2px 1px; }
+.blk-row { display: flex; gap: 2px; padding: 1px; border-radius: 3px; }
+.blk-row.blk-day { background: #fff3c4; }
+.blk-row.blk-night { background: #e3e6f8; }
+.blk { display: block; flex: 1; min-width: 0; height: 8px; border-radius: 2px; }
+.blk.is-solo { background: repeating-linear-gradient(45deg, #8a909b 0 2px, #e4e5e8 2px 4px); }
+.blk.is-open { border: 1px dashed var(--line2); box-sizing: border-box; background: transparent; }
+.blk.is-me { box-shadow: 0 0 0 1.5px #23252a; }
+.all-legend { gap: 4px 10px; }
+.sw-item { display: inline-flex; align-items: center; gap: 3px; }
+.sw-item .blk { flex: none; width: 14px; height: 10px; }
+.sw-item.is-me { font-weight: 700; color: var(--fg); }
+.blk-key { font-size: 9px; padding: 0 3px; border-radius: 2px; margin: 0 2px; color: var(--fg-dim); }
+.blk-key.blk-day { background: #fff3c4; }
+.blk-key.blk-night { background: #e3e6f8; }
