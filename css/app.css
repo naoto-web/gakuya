@@ -693,4 +693,11 @@ h1.brand { margin: 0; line-height: 0; }
 .lc.is-me { box-shadow: 0 0 0 2px #23252a; }
 .lc.is-solo { background: #5a5f69; color: #ffffff; font-size: 11px; }
 .lc.is-empty { background: transparent; border: 1px dashed var(--line2); color: var(--fg-dim); font-weight: 500; line-height: 1.55; }
-.dl-card .day-detail { margin: 4px 0 8px; border-color: var(--line2); }
+.dl-card .day-detail { margin: 4px 0 8px; border-color: var(--line2); }/* 9/29 Naoto「目がちかちかする」→全体の一覧は原色の塗りをやめる：地＝メンバーカラー15%・左に3pxの帯・字は黒系。
+   自分だけ地を濃く（28%）＋太字＋黒縁。昼・夜の欄の地も淡く */
+.lc { background: color-mix(in srgb, var(--mc) 15%, #ffffff); color: #2a2d33; font-weight: 500; border-left: 3px solid var(--mc); border-radius: 4px; }
+.lc.is-me { background: color-mix(in srgb, var(--mc) 28%, #ffffff); font-weight: 700; box-shadow: 0 0 0 1.5px #23252a; }
+.lc.is-solo { background: #eceef1; color: #4a4f58; border-left: 3px solid #5a5f69; font-weight: 700; }
+.lc.is-empty { border-left-width: 1px; }
+.dl-slot.dl-day { background: #fffaf0; }
+.dl-slot.dl-night { background: #f3f4fb; }
