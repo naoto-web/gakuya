@@ -844,3 +844,6 @@ button.name.is-edit:active { transform: translateY(1px); filter: brightness(.95)
 .we-half { padding-left: 0; }
 .we-q { flex-basis: 100%; }
 .we-half .btn { flex: 1; }
+/* 半休の中身（例：ミッドのみ出勤）を板の行の下に */
+.we-say { flex-basis: 100%; padding-left: 90px; font-size: 12px; font-weight: 700; color: var(--half); margin-top: -2px; }
+.we-cap b { color: var(--half); }
