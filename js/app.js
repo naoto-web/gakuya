@@ -55,16 +55,16 @@ var APP = (function () {
     var opts = function (cur) {
       return m.members.map(function (x) { return '<option value="' + u.esc(x.name) + '"' + (x.name === cur ? ' selected' : '') + '>' + u.esc(x.name) + '</option>'; }).join('');
     };
+    // 🔑帯は1行・アプリ本体と違う濃い色＝「ここから下が配信者の見え方」とひと目でわかるように
     if (m.previewBy) {
-      // いま配信者の画面を見ている（管理者のプレビュー）
       box.className = 'viewas is-preview';
-      box.innerHTML = '<span class="viewas-cap">配信者の画面</span>' +
-        '<select id="as-sel" class="date-input" aria-label="表示する配信者">' + opts(m.name) + '</select>' +
-        '<button type="button" class="btn btn-sm" id="as-back">管理者に戻る</button>';
+      box.innerHTML = '<span class="viewas-cap">配信者の画面（プレビュー）</span>' +
+        '<select id="as-sel" aria-label="表示する配信者">' + opts(m.name) + '</select>' +
+        '<button type="button" class="viewas-back" id="as-back">管理者に戻る</button>';
     } else if (m.role === 'admin') {
       box.className = 'viewas';
-      box.innerHTML = '<span class="viewas-cap">配信者として見る</span>' +
-        '<select id="as-sel" class="date-input" aria-label="配信者として見る"><option value="">選ぶ…</option>' + opts('') + '</select>';
+      box.innerHTML = '<span class="viewas-cap">管理者</span>' +
+        '<select id="as-sel" aria-label="配信者として見る"><option value="">配信者として見る…</option>' + opts('') + '</select>';
     } else { box.hidden = true; return; }
     box.hidden = false;
     document.getElementById('as-sel').addEventListener('change', function (e) { if (e.target.value) setAs(e.target.value); });
@@ -77,9 +77,8 @@ var APP = (function () {
     if (!CONFIG.KEY) { KEYGATE.show(''); document.getElementById('view').innerHTML = ''; return; }
     API.me().then(function (m) {
       me = m;
-      document.getElementById('who-now').innerHTML = m.previewBy
-        ? u.esc(m.name) + '<span class="pill dim">として表示中</span>'
-        : u.esc(m.name) + (m.role === 'admin' ? '<span class="pill dim">管理者</span>' : '');
+      // プレビュー中は配信者本人の画面と同じ（名前だけ）。管理者の印は上の帯が持つ
+      document.getElementById('who-now').innerHTML = u.esc(m.name);
       renderViewAs(m);
       render();
       SHIFT.init(m);
