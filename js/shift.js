@@ -269,13 +269,14 @@ var SHIFT = (function () {
   }
 
   // 管理者の編集中だけ：その日の休み希望（9/29 Naoto「休み希望が入った状態でいじりたい」）
+  //   🔄同日 押すとその日の休み希望を直す板（希望がない日も「なし ✎」で出す＝足せる）
   function wishLine(date) {
-    var w = (st.data.edit && st.data.edit.wish && st.data.edit.wish[date]) || null;
-    if (!w) return '';
-    return '<p class="memo wish-line">休み希望：' + Object.keys(w).map(function (n) {
+    var w = (st.data.edit && st.data.edit.wish && st.data.edit.wish[date]) || {};
+    var names = Object.keys(w);
+    return '<button type="button" class="memo memo-btn wish-line" data-edit-wish="' + date + '">休み希望：' + (names.length ? names.map(function (n) {
       var k = /撮影/.test(w[n]) ? 'shoot' : /休/.test(w[n]) ? 'off' : 'note';
       return '<span class="wl wl-' + k + '">' + u.esc(n) + ' ' + u.esc(w[n]) + '</span>';
-    }).join('') + '</p>';
+    }).join('') : '<span class="faint">なし</span>') + ' ✎</button>';
   }
 
   // 管理者だけ：この月を配信者に見せるかどうか
@@ -377,6 +378,7 @@ var SHIFT = (function () {
     el.querySelectorAll('[data-edit-slot]').forEach(function (b) {
       b.addEventListener('click', function () { EDIT.openSlot(b.dataset.editDate, +b.dataset.editSlot); });
     });
+    el.querySelectorAll('[data-edit-wish]').forEach(function (b) { b.addEventListener('click', function () { EDIT.openWish(b.dataset.editWish); }); });
     el.querySelectorAll('[data-edit-memo]').forEach(function (b) { b.addEventListener('click', function () { EDIT.openMemo(b.dataset.editMemo); }); });
     el.querySelectorAll('[data-lock-day]').forEach(function (b) { b.addEventListener('click', function () { EDIT.lockDay(b.dataset.lockDay, b.dataset.on === '1'); }); });
     if (q('#bulk-menu')) q('#bulk-menu').addEventListener('click', function () { EDIT.openMenu(); });
