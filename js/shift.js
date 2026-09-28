@@ -138,7 +138,8 @@ var SHIFT = (function () {
       // 日付の色はカレンダーと同じ（土＝青・日祝＝赤）。祝日は名前も添える
       '<div class="row" style="justify-content:space-between"><strong class="day-detail-date"><span class="' + dayClass(r.date) + '">' + u.md(r.date) + '</span>' +
       (u.holidayOf(r.date) ? '<span class="hol-name">' + u.esc(u.holidayOf(r.date)) + '</span>' : '') + (r.date === today ? ' 今日' : '') + '</strong>' +
-      (r.grade ? '<span class="grade-line">' + gradeBadge(r.grade) + u.esc(r.grade.name) + '</span>' : '') + '</div>' +
+      // 右上のグレード表示は消した（下の場の札と情報が重なる・9/29 Naoto）
+      '</div>' +
       // 昼・夜の札はカレンダーの凡例と同じ「中が薄い」札（9/29 Naoto）
       '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0]) + chip(r.day[1], me, lk[1]) + '</div>' +
       venues(r.date, '昼') +
@@ -146,7 +147,6 @@ var SHIFT = (function () {
       '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2]) + chip(r.night[1], me, lk[3]) + '</div>' +
       venues(r.date, '夜') +
       (isAdmin() && r.memo ? '<p class="memo">メモ：' + u.esc(r.memo) + '</p>' : '') +
-      (st.data && st.data.races && st.data.races[r.date] ? kubunLegend() : '') +
       '</div>';
   }
 
