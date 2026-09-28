@@ -663,3 +663,34 @@ h1.brand { margin: 0; line-height: 0; }
 .blk-key { font-size: 9px; padding: 0 3px; border-radius: 2px; margin: 0 2px; color: var(--fg-dim); }
 .blk-key.blk-day { background: #fff3c4; }
 .blk-key.blk-night { background: #e3e6f8; }
+/* 9/29 Naoto「全体は縦一列で1日一行」 */
+.dl-card { padding: 6px 8px; gap: 0; }
+.dl-head, .dl-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 4px; align-items: center; }
+.dl-head { padding: 0 0 4px; font-size: 11px; }
+.dl-head .lg { justify-self: center; }
+.dl-row {
+  width: 100%; border: 0; border-top: 1px solid var(--line); background: none;
+  padding: 3px 0; text-align: left; -webkit-tap-highlight-color: transparent;
+}
+.dl-row:active { background: var(--panel2); }
+.dl-row.is-today { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.dl-row.is-open { background: var(--panel2); }
+.dl-date { display: flex; align-items: baseline; gap: 2px; flex-wrap: wrap; line-height: 1.1; }
+.dl-d { font-size: 17px; font-weight: 700; min-width: 1.2em; text-align: right; }
+.dl-w { font-size: 11px; color: var(--fg-dim); }
+.dl-d.sun, .dl-w.sun { color: var(--ng); }
+.dl-d.sat, .dl-w.sat { color: var(--accent); }
+.dl-row.is-today .dl-d { text-decoration: underline; text-underline-offset: 3px; }
+.dl-date .gb { flex-basis: auto; margin-top: 1px; font-size: 9px; }
+.dl-slot { display: flex; gap: 3px; padding: 3px; border-radius: 6px; min-width: 0; }
+.dl-slot.dl-day { background: #fff3c4; }
+.dl-slot.dl-night { background: #e3e6f8; }
+.lc {
+  flex: 1 1 0; min-width: 0; overflow: hidden; white-space: nowrap; text-align: center;
+  font-size: 12px; font-weight: 700; line-height: 1.7; border-radius: 5px; letter-spacing: -.02em;
+  background: #ffffff; color: var(--fg);
+}
+.lc.is-me { box-shadow: 0 0 0 2px #23252a; }
+.lc.is-solo { background: #5a5f69; color: #ffffff; font-size: 11px; }
+.lc.is-empty { background: transparent; border: 1px dashed var(--line2); color: var(--fg-dim); font-weight: 500; line-height: 1.55; }
+.dl-card .day-detail { margin: 4px 0 8px; border-color: var(--line2); }
