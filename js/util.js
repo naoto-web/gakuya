@@ -96,17 +96,17 @@
       return { k: 'half', ng, say: ng ? OKL.u.halfSay(ng) : v, label: '半 ' + (ng ? OKL.u.halfSay(ng) : v), raw: v };
     },
     // 半休の言い方＝「出られる側」で言い切る（9/29 Naoto「モ・デ・ナNGなら『ミッドから』…休むように見えるかな？」
-    //   →「〜出勤」を付けて向きをはっきりさせる）。出られる所が続いていないときだけNGの側で言う
+    //   →「〜出勤」で向きをはっきり。🔄同日「出勤」→「可」＝あくまで希望なので）。出られる所が続いていないときだけNGの側で言う
     halfSay: (ng) => {
       const F = OKL.u.Q4;
       const ok = [0, 1, 2, 3].filter((i) => ng.indexOf(i) < 0);
       if (!ok.length) return '終日NG';
       const run = ok[ok.length - 1] - ok[0] === ok.length - 1;  // 出られる所がひと続き
       if (!run) return ng.map((i) => F[i]).join('・') + 'NG';
-      if (ok.length === 1) return F[ok[0]] + 'のみ出勤';
-      if (ok[ok.length - 1] === 3) return F[ok[0]] + 'から出勤';
-      if (ok[0] === 0) return F[ok[ok.length - 1]] + 'まで出勤';
-      return F[ok[0]] + '〜' + F[ok[ok.length - 1]] + '出勤';
+      if (ok.length === 1) return F[ok[0]] + 'のみ可';
+      if (ok[ok.length - 1] === 3) return F[ok[0]] + 'から可';
+      if (ok[0] === 0) return F[ok[ok.length - 1]] + 'まで可';
+      return F[ok[0]] + '〜' + F[ok[ok.length - 1]] + '可';
     },
     wishText: (ng) => ng && ng.length ? '半（' + ng.slice().sort().map((i) => OKL.u.Q4S[i]).join('・') + 'NG）' : '',
     WISH_ORDER: { off: 0, half: 1, shoot: 2 },
