@@ -108,8 +108,9 @@ var SHIFT = (function () {
       '<div class="row" style="justify-content:space-between"><strong class="day-detail-date"><span class="' + dayClass(r.date) + '">' + u.md(r.date) + '</span>' +
       (u.holidayOf(r.date) ? '<span class="hol-name">' + u.esc(u.holidayOf(r.date)) + '</span>' : '') + (r.date === today ? ' 今日' : '') + '</strong>' +
       (r.grade ? '<span class="grade-line">' + gradeBadge(r.grade) + u.esc(r.grade.name) + '</span>' : '') + '</div>' +
-      '<div class="slot-row"><span class="pill day">昼</span>' + chip(r.day[0], me, lk[0]) + chip(r.day[1], me, lk[1]) + '</div>' +
-      '<div class="slot-row"><span class="pill night">夜</span>' + chip(r.night[0], me, lk[2]) + chip(r.night[1], me, lk[3]) + '</div>' +
+      // 昼・夜の札はカレンダーの凡例と同じ「中が薄い」札（9/29 Naoto）
+      '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0]) + chip(r.day[1], me, lk[1]) + '</div>' +
+      '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2]) + chip(r.night[1], me, lk[3]) + '</div>' +
       (isAdmin() && r.memo ? '<p class="memo">メモ：' + u.esc(r.memo) + '</p>' : '') +
       '</div>';
   }
@@ -173,7 +174,8 @@ var SHIFT = (function () {
       '<div class="legend">' +
       (me ? '<span><span class="lg lg-day">昼</span><span class="lg lg-night">夜</span>＝' + (isAdmin() ? 'その人' : '自分') + 'の出番（中は相方）</span>' : '<span><span class="sm aki">未定</span>＝人が入っていない枠</span>') +
       '<span><span class="gb gb-day">昼G</span><span class="gb gb-night">夜G</span>＝グレード</span>' +
-      (me ? '<span class="legend-count">' + (isAdmin() ? u.esc(me) + ' ' : '') + '<b class="num">' + count + '</b>枠' + (lim ? '/' + lim : '') + '</span>' : '') +
+      // 出勤数は管理者（強調中）だけ。配信者の画面には出さない（9/29 Naoto「23枠/25って表示は消して」）
+      (me && isAdmin() ? '<span class="legend-count">' + (isAdmin() ? u.esc(me) + ' ' : '') + '<b class="num">' + count + '</b>枠' + (lim ? '/' + lim : '') + '</span>' : '') +
       '</div></div>' +
       (selRow ? detail(selRow, me, today) : '');
     bind(el);
