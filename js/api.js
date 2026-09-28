@@ -16,7 +16,7 @@ var API = (function () {
 
   // 読み取り。GASはリダイレクトを返すので fetch の既定（follow）に任せる
   function get(app, params) {
-    var p = Object.assign({}, params || {}, { app: app, k: CONFIG.KEY, cb: Date.now() });
+    var p = Object.assign({}, params || {}, { app: app, k: CONFIG.KEY, as: CONFIG.AS, cb: Date.now() });
     return fetch(CONFIG.GAS_URL + '?' + qs(p), { method: 'GET', cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(check);
