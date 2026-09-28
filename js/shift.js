@@ -40,8 +40,10 @@ var SHIFT = (function () {
     return open ? '<span class="sm aki">未定' + open + '</span>' : '';
   }
 
+  // 🔑月曜始まり（9/29 Naoto）。u.dow は日曜=0 なので (曜日+6)%7 で月曜=0 に直す
+  var HEAD = ['月', '火', '水', '木', '金', '土', '日'];
   function calendar(rows, me, today) {
-    var first = u.dow(rows[0].date);
+    var first = (u.dow(rows[0].date) + 6) % 7;
     var h = '';
     for (var i = 0; i < first; i++) h += '<span class="scal-cell is-blank"></span>';
     rows.forEach(function (r) {
@@ -50,10 +52,11 @@ var SHIFT = (function () {
       var cls = ['scal-cell', r.grade ? 'is-grade' : '', r.date === today ? 'is-today' : '', r.date === st.sel ? 'is-sel' : '', mine ? 'is-mine' : ''].join(' ');
       h += '<button type="button" class="' + cls + '" data-date="' + r.date + '" aria-pressed="' + (r.date === st.sel) + '" aria-label="' + u.md(r.date) + (r.grade ? '・' + u.esc(r.grade.name) : '') + '">' +
         '<span class="scal-d num ' + (dw === 0 ? 'sun' : dw === 6 ? 'sat' : '') + '">' + Number(r.date.slice(8)) + '</span>' +
-        (r.grade ? '<span class="scal-g">G</span>' : '') +
-        '<span class="scal-marks">' + cellMarks(r, me) + '</span></button>';
+        // 下の行＝左端にグレードの「G」（9/29 Naoto「日付の四角の左下」）＋右側に昼・夜の札。
+        //   Gの場所はGが無い日も空けておく＝札の位置が日によって動かない
+        '<span class="scal-marks"><span class="scal-g">' + (r.grade ? 'G' : '') + '</span><span class="scal-chips">' + cellMarks(r, me) + '</span></span></button>';
     });
-    return '<div class="cal-head">' + u.DOW.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="scal">' + h + '</div>';
+    return '<div class="cal-head mon">' + HEAD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="scal">' + h + '</div>';
   }
 
   function detail(r, me, today) {
