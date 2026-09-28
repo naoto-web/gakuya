@@ -54,13 +54,19 @@ var APP = (function () {
   //   🔑ロゴの行の高さを変えない（帯を足すと下が全部ずれる＝9/29 Naoto「そのずれもない方がいい」）
   function renderWho(m) {
     var box = document.getElementById('who-now');
-    if (!m.previewBy && m.role !== 'admin') { box.textContent = m.name; return; }
+    // 誰で見ているかの札＝その人のメンバーカラー（9/29 Naoto）。管理者本人は色なし
+    var mc = (m.members || []).filter(function (x) { return x.name === m.name; })[0];
+    var paint = mc && mc.color ? 'background:' + mc.color + ';color:' + u.inkOn(mc.color) + ';border-color:' + mc.color : '';
+    if (!m.previewBy && m.role !== 'admin') {
+      box.innerHTML = '<span class="who-name"' + (paint ? ' style="' + paint + '"' : '') + '>' + u.esc(m.name) + '</span>';
+      return;
+    }
     var names = m.members.map(function (x) {
       return '<option value="' + u.esc(x.name) + '"' + (m.previewBy && x.name === m.name ? ' selected' : '') + '>' + u.esc(x.name) + '</option>';
     }).join('');
     var ADMIN = '__admin';
     var adminLabel = u.esc(m.previewBy || m.name) + '（管理者）';
-    box.innerHTML = '<select id="as-sel" class="who-sel' + (m.previewBy ? ' is-preview' : '') + '" aria-label="' + (m.previewBy ? '表示する配信者を切り替える' : '配信者として見る') + '">' +
+    box.innerHTML = '<select id="as-sel" class="who-sel' + (m.previewBy ? ' is-preview' : '') + '"' + (m.previewBy && paint ? ' style="' + paint + '"' : '') + ' aria-label="' + (m.previewBy ? '表示する配信者を切り替える' : '配信者として見る') + '">' +
       (m.previewBy
         ? '<optgroup label="配信者の画面（プレビュー）">' + names + '</optgroup><option value="' + ADMIN + '">↩ 管理者に戻る</option>'
         : '<option value="" selected>' + adminLabel + '</option><optgroup label="配信者として見る">' + names + '</optgroup>') +
