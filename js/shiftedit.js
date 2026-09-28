@@ -143,11 +143,18 @@ var EDIT = (function () {
       var why = reasons(date, s, m.name);
       (why.length ? ng : ok).push({ m: m, why: why });
     });
+    // 半休の人の札＝この枠の出られる側だけ塗る（9/29 Naoto「詳細を押したときの名前バッジも」）。候補外（灰色）はそのまま
+    function halfPick(name, c, isNg) {
+      if (isNg) return '';
+      var hi = u.wishInfo(wishOf(date, name));
+      var hb = hi && hi.k === 'half' ? u.slotHalfBg(hi.ng, s < 2 ? '昼' : '夜', 'color-mix(in srgb, ' + c + ' 30%, #ffffff)') : '';
+      return hb ? ';background:' + hb : '';
+    }
     function item(x, isNg) {
       var c = x.m.color || '#9aa0aa';
       var n = countOf(x.m.name), lim = x.m.limit;
       var note = isNg ? x.why.join('・') : wishNote(date, x.m.name, s);
-      return '<button type="button" class="pick' + (isNg ? ' is-ng' : '') + (x.m.name === cur ? ' is-cur' : '') + '" data-pick="' + u.esc(x.m.name) + '" style="--mc:' + c + '">' +
+      return '<button type="button" class="pick' + (isNg ? ' is-ng' : '') + (x.m.name === cur ? ' is-cur' : '') + '" data-pick="' + u.esc(x.m.name) + '" style="--mc:' + c + halfPick(x.m.name, c, isNg) + '">' +
         '<span class="pick-name">' + u.esc(x.m.name) + '</span>' +
         '<span class="pick-cnt num">' + n + (lim ? '/' + lim : '') + '</span>' +
         (note ? '<span class="pick-why">' + u.esc(note) + '</span>' : '') + '</button>';
