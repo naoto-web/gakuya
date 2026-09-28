@@ -50,26 +50,26 @@ var APP = (function () {
     location.reload();
   }
 
-  function renderViewAs(m) {
-    var box = document.getElementById('viewas');
-    var opts = function (cur) {
-      return m.members.map(function (x) { return '<option value="' + u.esc(x.name) + '"' + (x.name === cur ? ' selected' : '') + '>' + u.esc(x.name) + '</option>'; }).join('');
-    };
-    // 🔑帯は1行・アプリ本体と違う濃い色＝「ここから下が配信者の見え方」とひと目でわかるように
-    if (m.previewBy) {
-      box.className = 'viewas is-preview';
-      box.innerHTML = '<span class="viewas-cap">配信者の画面（プレビュー）</span>' +
-        '<select id="as-sel" aria-label="表示する配信者">' + opts(m.name) + '</select>' +
-        '<button type="button" class="viewas-back" id="as-back">管理者に戻る</button>';
-    } else if (m.role === 'admin') {
-      box.className = 'viewas';
-      box.innerHTML = '<span class="viewas-cap">管理者</span>' +
-        '<select id="as-sel" aria-label="配信者として見る"><option value="">配信者として見る…</option>' + opts('') + '</select>';
-    } else { box.hidden = true; return; }
-    box.hidden = false;
-    document.getElementById('as-sel').addEventListener('change', function (e) { if (e.target.value) setAs(e.target.value); });
-    var back = document.getElementById('as-back');
-    if (back) back.addEventListener('click', function () { setAs(''); });
+  // ロゴの右。配信者＝名前の文字だけ／管理者・プレビュー中＝同じ場所に切り替えメニュー
+  //   🔑ロゴの行の高さを変えない（帯を足すと下が全部ずれる＝9/29 Naoto「そのずれもない方がいい」）
+  function renderWho(m) {
+    var box = document.getElementById('who-now');
+    if (!m.previewBy && m.role !== 'admin') { box.textContent = m.name; return; }
+    var names = m.members.map(function (x) {
+      return '<option value="' + u.esc(x.name) + '"' + (m.previewBy && x.name === m.name ? ' selected' : '') + '>' + u.esc(x.name) + '</option>';
+    }).join('');
+    var ADMIN = '__admin';
+    var adminLabel = u.esc(m.previewBy || m.name) + '（管理者）';
+    box.innerHTML = '<select id="as-sel" class="who-sel' + (m.previewBy ? ' is-preview' : '') + '" aria-label="' + (m.previewBy ? '表示する配信者を切り替える' : '配信者として見る') + '">' +
+      (m.previewBy
+        ? '<optgroup label="配信者の画面（プレビュー）">' + names + '</optgroup><option value="' + ADMIN + '">↩ 管理者に戻る</option>'
+        : '<option value="" selected>' + adminLabel + '</option><optgroup label="配信者として見る">' + names + '</optgroup>') +
+      '</select>';
+    document.getElementById('as-sel').addEventListener('change', function (e) {
+      var v = e.target.value;
+      if (v === ADMIN) setAs('');
+      else if (v && v !== (m.previewBy ? m.name : '')) setAs(v);
+    });
   }
 
   function boot() {
@@ -77,9 +77,7 @@ var APP = (function () {
     if (!CONFIG.KEY) { KEYGATE.show(''); document.getElementById('view').innerHTML = ''; return; }
     API.me().then(function (m) {
       me = m;
-      // プレビュー中は配信者本人の画面と同じ（名前だけ）。管理者の印は上の帯が持つ
-      document.getElementById('who-now').innerHTML = u.esc(m.name);
-      renderViewAs(m);
+      renderWho(m);
       render();
       SHIFT.init(m);
     }).catch(function (e) {
