@@ -29,6 +29,11 @@
     esc: (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
     // 9/29 14:02
     stamp: (iso) => { const d = new Date(iso); return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; },
+    // 塗りの上の字の色：明るい色（黄など）は黒字、それ以外は白字（メンバーカラーの札で使う）
+    inkOn: (hex) => {
+      const n = parseInt(String(hex).slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+      return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? '#23252a' : '#ffffff';
+    },
     // 同じ種から毎回同じ乱数（サンプルを安定させる）
     rng: (seed) => () => {
       seed = (seed + 0x6d2b79f5) | 0;
