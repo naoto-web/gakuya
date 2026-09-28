@@ -93,7 +93,20 @@
       if (m) ng = S.map((s, i) => m[1].indexOf(s) >= 0 ? i : -1).filter((i) => i >= 0);
       const only = /^(モーニング|デイ|昼間|ナイター|ミッド|ミッドナイト)のみ$/.exec(v);
       if (only) { const i = { モーニング: 0, デイ: 1, 昼間: 1, ナイター: 2, ミッド: 3, ミッドナイト: 3 }[only[1]]; ng = [0, 1, 2, 3].filter((x) => x !== i); }
-      return { k: 'half', ng, label: ng ? '半 ' + ng.map((i) => S[i]).join('・') + 'NG' : '半 ' + v, raw: v };
+      return { k: 'half', ng, say: ng ? OKL.u.halfSay(ng) : v, label: '半 ' + (ng ? OKL.u.halfSay(ng) : v), raw: v };
+    },
+    // 半休の言い方＝「出られる側」で言い切る（9/29 Naoto「モ・デ・ナNGなら『ミッドから』…休むように見えるかな？」
+    //   →「〜出勤」を付けて向きをはっきりさせる）。出られる所が続いていないときだけNGの側で言う
+    halfSay: (ng) => {
+      const F = OKL.u.Q4;
+      const ok = [0, 1, 2, 3].filter((i) => ng.indexOf(i) < 0);
+      if (!ok.length) return '終日NG';
+      const run = ok[ok.length - 1] - ok[0] === ok.length - 1;  // 出られる所がひと続き
+      if (!run) return ng.map((i) => F[i]).join('・') + 'NG';
+      if (ok.length === 1) return F[ok[0]] + 'のみ出勤';
+      if (ok[ok.length - 1] === 3) return F[ok[0]] + 'から出勤';
+      if (ok[0] === 0) return F[ok[ok.length - 1]] + 'まで出勤';
+      return F[ok[0]] + '〜' + F[ok[ok.length - 1]] + '出勤';
     },
     wishText: (ng) => ng && ng.length ? '半（' + ng.slice().sort().map((i) => OKL.u.Q4S[i]).join('・') + 'NG）' : '',
     WISH_ORDER: { off: 0, half: 1, shoot: 2 },
