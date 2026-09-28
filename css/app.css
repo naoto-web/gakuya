@@ -768,3 +768,38 @@ button.name.is-edit:active { transform: translateY(1px); filter: brightness(.95)
 .op.is-danger b { color: var(--ng); }
 .op-confirm { border: 2px solid var(--btn-line); border-radius: 10px; padding: 10px 12px; background: var(--gold-soft); display: grid; gap: 8px; }
 .op-confirm p { margin: 0; }
+
+/* ── 管理者の休み希望タブ（9/29・wishadmin.js）──
+   休＝橙（--off）／撮影＝紫（--shoot）／それ以外＝灰。名前はメンバーカラーの枠（原色の塗りは使わない） */
+.wa-sum { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; padding: 10px 12px; }
+.wa-sum-row { display: flex; align-items: center; gap: 4px; font-size: 13px; }
+.wa-who { flex: none; margin-right: auto; font-weight: 700; padding: 1px 8px; border-radius: 6px; border: 1.5px solid var(--mc); background: color-mix(in srgb, var(--mc) 15%, #ffffff); white-space: nowrap; }
+.wa-n { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.wa-n.is-zero { color: var(--fg-faint); font-weight: 400; }
+.wk { font-style: normal; font-size: 10px; font-weight: 700; padding: 0 4px; border-radius: 4px; color: #fff; }
+.wk-off { background: var(--off); }
+.wk-shoot { background: var(--shoot); }
+.wk-note { background: #8a8d93; }
+.wa-list { padding: 4px 8px; gap: 0; }
+.wa-row { display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left; padding: 8px 4px; border: 0; border-bottom: 1px solid var(--line); background: none; font: inherit; color: inherit; cursor: pointer; }
+.wa-row:last-child { border-bottom: 0; }
+.wa-row:active { background: var(--accent-soft); }
+.wa-date { width: 40px; flex: none; display: flex; align-items: baseline; gap: 2px; }
+.wa-date b { font-size: 18px; }
+.wa-date small { font-size: 11px; color: var(--fg-dim); }
+.wa-date .sun { color: var(--ng); }
+.wa-date .sat { color: var(--accent); }
+.wa-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.wa-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--mc); background: color-mix(in srgb, var(--mc) 12%, #ffffff); }
+.wa-chip b { font-size: 12px; }
+.wa-chip.wa-off b { color: var(--off); }
+.wa-chip.wa-shoot b { color: var(--shoot); }
+.wa-chip.wa-note { background: #f1f0ec; }
+.wa-chip.wa-note b { color: var(--fg-dim); font-weight: 500; }
+.wa-chip.is-clash { box-shadow: 0 0 0 2px var(--ng); }
+.wa-chip em { font-style: normal; font-size: 10px; color: #fff; background: var(--ng); border-radius: 4px; padding: 0 4px; }
+/* シフトの詳細（管理者の編集中）の休み希望の1行 */
+.wish-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.wl { font-size: 12px; padding: 0 6px; border-radius: 5px; background: #f1f0ec; color: var(--fg-dim); }
+.wl-off { background: color-mix(in srgb, var(--off) 14%, #ffffff); color: var(--off); font-weight: 700; }
+.wl-shoot { background: color-mix(in srgb, var(--shoot) 14%, #ffffff); color: var(--shoot); font-weight: 700; }
