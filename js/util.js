@@ -108,6 +108,16 @@
       if (ok[0] === 0) return F[ok[ok.length - 1]] + 'まで可';
       return F[ok[0]] + '〜' + F[ok[ok.length - 1]] + '可';
     },
+    // 半休の札の塗り：左から モ・デ・ナ・ミ の4等分で、出られる所だけ色（9/29 Naoto「ミッドのみ可なら後半だけ色付ける」）
+    //   NGの所は白地に薄い斜線。color＝塗る色（CSSの色なら何でも）
+    halfBg: (ng, color) => {
+      if (!ng) return '';
+      const stops = [0, 1, 2, 3].map((i) => {
+        const c = ng.indexOf(i) >= 0 ? 'transparent' : color;
+        return `${c} ${i * 25}% ${(i + 1) * 25}%`;
+      }).join(', ');
+      return `linear-gradient(90deg, ${stops}), repeating-linear-gradient(135deg, #ffffff 0 4px, #eeede9 4px 6px)`;
+    },
     wishText: (ng) => ng && ng.length ? '半（' + ng.slice().sort().map((i) => OKL.u.Q4S[i]).join('・') + 'NG）' : '',
     WISH_ORDER: { off: 0, half: 1, shoot: 2 },
     // 同じ種から毎回同じ乱数（サンプルを安定させる）
