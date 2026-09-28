@@ -14,7 +14,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/app.css">
+<!-- css/app.css と js/ は下の読み込み係が版の番号つきで読む（CSSが届くまで画面を出さない＝崩れた見た目を一瞬見せない） -->
+<style>html:not(.ready) body { visibility: hidden; }</style>
 </head>
 <body>
 <!-- 🔴このリポジトリは公開。人名・鍵・売上をコードに書かない（名前はGASから受け取る） -->
@@ -47,11 +48,38 @@
   </div>
 </div>
 
-<script src="js/config.js"></script>
-<script src="js/util.js"></script>
-<script src="js/api.js"></script>
-<script src="js/keygate.js"></script>
-<script src="js/shift.js"></script>
-<script src="js/app.js"></script>
+<!-- 読み込み係（9/29「アプリ更新したけど直ってない」の対策）
+     🔴GitHub Pagesは全ファイルに「10分はスマホの保存分を使ってよい」（max-age=600）を付けて配り、変えられない。
+       → 公開のたびに version.json の番号を変え（公開.ps1 が自動で書く）、CSS・JSを「?v=番号」付きで読む
+         ＝番号が変われば別のファイル扱いになり、スマホは必ず新しいものを取りにいく。
+       version.json だけは毎回その場で取りにいく（?cb= と no-store）。
+     ⚠️このファイル（index.html）自体は10分キャッシュされる＝ここを変えたときだけは最大10分遅れる。
+       なので読み込み係は極力変えない。ファイルを増やしたら下の JS の並びに足す。 -->
+<script>
+(function () {
+  var CSS = ['css/app.css'];
+  var JS = ['js/config.js', 'js/util.js', 'js/api.js', 'js/keygate.js', 'js/shift.js', 'js/app.js'];
+  var shown = false;
+  function show() { if (!shown) { shown = true; document.documentElement.classList.add('ready'); } }
+  setTimeout(show, 3000);  // CSSが届かなくても3秒で出す（真っ白のままにしない）
+  function load(v) {
+    CSS.forEach(function (f) {
+      var l = document.createElement('link');
+      l.rel = 'stylesheet'; l.href = f + '?v=' + v;
+      l.onload = show; l.onerror = show;
+      document.head.appendChild(l);
+    });
+    JS.forEach(function (f) {
+      var s = document.createElement('script');
+      s.src = f + '?v=' + v; s.async = false;  // 並び順どおりに実行
+      document.body.appendChild(s);
+    });
+  }
+  fetch('version.json?cb=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (j) { load(j.v); })
+    .catch(function () { load(Date.now()); });  // 取れなければ毎回新しく読む
+})();
+</script>
 </body>
 </html>
