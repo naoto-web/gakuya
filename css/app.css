@@ -508,3 +508,11 @@ h1.brand { margin: 0; line-height: 0; }
 
 .day-detail { padding: 10px 12px; gap: 6px; }
 .day-detail-date { font-size: 16px; }
+/* 9/29 Naoto：グレードの「G」は日付の四角の左下／月曜始まり */
+.scal-marks { display: grid; grid-template-columns: 10px 1fr; align-items: end; width: 100%; height: 100%; }
+.scal-g { position: static; font-size: 10px; font-weight: 700; line-height: 15px; color: var(--gold); text-align: left; padding-left: 2px; }
+.scal-chips { display: flex; gap: 2px; justify-content: center; }
+.scal-chips .sm { padding: 0 2px; }
+.cal-head.mon span:first-child { color: var(--fg-dim); }
+.cal-head.mon span:nth-child(6) { color: var(--accent); }
+.cal-head.mon span:last-child { color: var(--ng); }
