@@ -161,10 +161,10 @@ var SHIFT = (function () {
     return '<span class="lc' + (n === me ? ' is-me' : '') + '" style="--mc:' + c + ';--ink:' + inkOn(c) + '">' + u.esc(n) + '</span>';
   }
   function dayList(rows, me, today) {
-    return '<div class="card dl-card">' +
+    return '<div class="card dl-card"' + (me && colorOf(me) ? ' style="--sel:' + colorOf(me) + '"' : '') + '>' +
       '<div class="dl-head"><span></span><span class="lg lg-day">昼</span><span class="lg lg-night">夜</span></div>' +
       rows.map(function (r) {
-        var open = r.date === st.sel;
+        var open = r.date === st.selAll;  // 全体で開いた行は個人のカレンダーの選択とは別（開いたときは全部閉じた状態・9/29 Naoto）
         var dw = u.dow(r.date);
         return '<button type="button" class="dl-row' + (r.date === today ? ' is-today' : '') + (open ? ' is-open' : '') + '" data-date="' + r.date + '" aria-expanded="' + open + '">' +
           '<span class="dl-date"><span class="dl-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span><span class="dl-w ' + dayClass(r.date) + '">' + u.DOW[dw] + '</span>' +
@@ -324,26 +324,22 @@ var SHIFT = (function () {
       '</div></div>' +
       (selRow ? detail(selRow, me, today) : ''));
     bind(el);
-    // 全体を開いた直後は今日の行が見える位置へ（31行あるので）。同じ月・同じ表示の再描画では動かさない
-    if (all && st.scrolledFor !== d.ym + ':all') {
-      st.scrolledFor = d.ym + ':all';
-      var tr = el.querySelector('.dl-row.is-today');
-      if (tr) setTimeout(function () { tr.scrollIntoView({ block: 'center' }); }, 0);
-    } else if (!all) { st.scrolledFor = null; }
+    // （全体を開いたときに今日へ自動スクロールする動きは 9/29 Naoto「デフォルトで本日にカーソルが合うようにしなくてOK」で廃止）
   }
 
   function bind(el) {
     var q = function (s) { return el.querySelector(s); };
     if (q('#reload')) q('#reload').addEventListener('click', function () { if (!st.loading) load(st.ym); });
-    el.querySelectorAll('[data-ym]').forEach(function (b) { b.addEventListener('click', function () { st.sel = null; load(b.dataset.ym); }); });
+    el.querySelectorAll('[data-ym]').forEach(function (b) { b.addEventListener('click', function () { st.sel = null; st.selAll = null; load(b.dataset.ym); }); });
     el.querySelectorAll('.scal-cell[data-date]').forEach(function (b) { b.addEventListener('click', function () { st.sel = b.dataset.date; render(el); }); });
     // 全体の一覧：行を押すとその下に詳細を開く・同じ行をもう一度押すと閉じる
     el.querySelectorAll('.dl-row[data-date]').forEach(function (b) {
-      b.addEventListener('click', function () { st.sel = st.sel === b.dataset.date ? null : b.dataset.date; render(el); });
+      b.addEventListener('click', function () { st.selAll = st.selAll === b.dataset.date ? null : b.dataset.date; render(el); });
     });
     el.querySelectorAll('[data-mode]').forEach(function (b) {
       b.addEventListener('click', function () {
         st.mode = b.dataset.mode;
+        st.selAll = null;  // 全体は全部閉じた状態で開く
         try { localStorage.setItem('gakuya:mode', st.mode); } catch (e) { /* 覚えられなくても切り替えは効く */ }
         render(el);
       });
