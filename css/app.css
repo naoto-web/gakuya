@@ -567,3 +567,13 @@ h1.brand { margin: 0; line-height: 0; }
 .day-detail-date .sun { color: var(--ng); }
 .day-detail-date .sat { color: var(--accent); }
 .hol-name { margin-left: 6px; font-size: 12px; font-weight: 700; color: var(--ng); }
+/* 9/29 Naoto「今日のマークで夜Gがはみ出る／今日だけ相方の札がおかしい」
+   原因＝今日の黒丸（左右6px）で上の行が広がり、マス（grid）が中身に押されて横にはみ出していた。
+   ①マスの列を minmax(0,1fr) にして中身に押し広げさせない ②今日の丸を細く ③詰めるのは日付側（札は縮めない） */
+.scal-cell { grid-template-columns: minmax(0, 1fr); overflow: hidden; }
+.scal-top { min-width: 0; }
+.scal-top .scal-d { min-width: 0; }
+.scal-top .gb { flex-shrink: 0; }
+.scal-cell.is-today .scal-d { padding: 0 3px; border-radius: 999px; }
+/* 詳細の昼・夜の札（カレンダーの凡例と同じ中が薄い札・少し大きく） */
+.slot-badge { font-size: 13px; padding: 1px 10px; border-radius: 6px; min-width: 32px; text-align: center; margin-right: 0; }
