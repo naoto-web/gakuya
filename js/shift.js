@@ -101,10 +101,18 @@ var SHIFT = (function () {
     });
     return '<div class="cal-head mon">' + HEAD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="scal">' + h + '</div>';
   }
-  // その日の開催（GASが netkeiba の開催カレンダーから返す）。昼＝モーニング・昼間／夜＝ナイター・ミッドナイト
-  //   表示は「熊本F2 初日」。グレード開催はグレードを札で（9/29 Naoto「グレードはバッジも付けて」）
-  //   モーニング・ミッドナイトは小さい札で区別。取れなかった日は何も出さない（シフトは見られる）
+  // その日の開催（GASが netkeiba の開催カレンダーから返す）。昼＝モーニング・デイ／夜＝ナイター・ミッドナイト
+  //   🔄9/29 Naoto：札（ボタン）にする。地の色＝コンソールの開催区分の色（§91）で区分がわかる。
+  //   中身は「青森 F2 初」＝初日→初・最終日→終・ほかは何日目の数字。グレード開催はグレードの字を金に。
+  //   🔑あとで押したらその場の出走表へ飛べるようにする前提＝押しやすい大きさのボタン（data-venue・data-date を持たせてある）
   var KUBUN_ORDER = { 'モーニング': 0, '昼間': 1, 'ナイター': 2, 'ミッドナイト': 3 };
+  var KUBUN_CLS = { 'モーニング': 'kc-morning', '昼間': 'kc-day', 'ナイター': 'kc-night', 'ミッドナイト': 'kc-mid' };
+  function dayMark(d) {
+    if (d === '初日') return '初';
+    if (d === '最終日') return '終';
+    var m = /(\d+)日目/.exec(d || '');
+    return m ? m[1] : (d || '');
+  }
   function venues(date, slot) {
     var list = (st.data && st.data.races && st.data.races[date]) || [];
     list = list.filter(function (x) { return slot === '昼' ? KUBUN_ORDER[x.k] <= 1 : KUBUN_ORDER[x.k] >= 2; })
@@ -112,14 +120,18 @@ var SHIFT = (function () {
     if (!list.length) return '';
     return '<div class="venues">' + list.map(function (x) {
       var isG = /^G|^GP/.test(x.g);
-      return '<span class="vn">' +
-        (isG ? '<span class="gb ' + (slot === '夜' ? 'gb-night' : 'gb-day') + '">' + u.esc(x.g) + '</span>' + u.esc(x.v) : u.esc(x.v) + u.esc(x.g)) +
-        ' <span class="vd">' + u.esc(x.d) + '</span>' +
-        (x.k === 'モーニング' ? '<span class="vk">モーニング</span>' : x.k === 'ミッドナイト' ? '<span class="vk">ミッド</span>' : '') +
-        '</span>';
+      return '<button type="button" class="rb ' + (KUBUN_CLS[x.k] || 'kc-day') + '" data-venue="' + u.esc(x.v) + '" data-date="' + date + '"' +
+        ' aria-label="' + u.esc(x.v + ' ' + x.g + ' ' + x.d + '（' + (x.k === '昼間' ? 'デイ' : x.k) + '）') + '">' +
+        '<span class="rb-v">' + u.esc(x.v) + '</span>' +
+        '<span class="rb-g' + (isG ? ' is-g' : '') + '">' + u.esc(x.g) + '</span>' +
+        '<span class="rb-d">' + u.esc(dayMark(x.d)) + '</span></button>';
     }).join('') + '</div>';
   }
-
+  // 札の色の見方（詳細の下に1行）
+  function kubunLegend() {
+    return '<div class="kc-legend"><span class="kc-dot kc-morning"></span>モーニング<span class="kc-dot kc-day"></span>デイ' +
+      '<span class="kc-dot kc-night"></span>ナイター<span class="kc-dot kc-mid"></span>ミッド</div>';
+  }
   function detail(r, me, today) {
     var lk = r.locked || [false, false, false, false];
     return '<div class="card day-detail">' +
@@ -133,6 +145,7 @@ var SHIFT = (function () {
       '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2]) + chip(r.night[1], me, lk[3]) + '</div>' +
       venues(r.date, '夜') +
       (isAdmin() && r.memo ? '<p class="memo">メモ：' + u.esc(r.memo) + '</p>' : '') +
+      (st.data && st.data.races && st.data.races[r.date] ? kubunLegend() : '') +
       '</div>';
   }
 
@@ -207,6 +220,8 @@ var SHIFT = (function () {
     if (q('#reload')) q('#reload').addEventListener('click', function () { if (!st.loading) load(st.ym); });
     el.querySelectorAll('[data-ym]').forEach(function (b) { b.addEventListener('click', function () { st.sel = null; load(b.dataset.ym); }); });
     el.querySelectorAll('.scal-cell[data-date]').forEach(function (b) { b.addEventListener('click', function () { st.sel = b.dataset.date; render(el); }); });
+    // レースの札：今は案内だけ。出走表ができたらここで data-venue・data-date を使って飛ぶ
+    el.querySelectorAll('.rb').forEach(function (b) { b.addEventListener('click', function () { APP.toast(b.dataset.venue + 'の出走表は準備中です'); }); });
     if (q('#focus')) q('#focus').addEventListener('change', function () { st.focus = q('#focus').value; render(el); });
     if (q('#pub-ask')) q('#pub-ask').addEventListener('click', function () { st.confirm = true; render(el); });
     if (q('#pub-no')) q('#pub-no').addEventListener('click', function () { st.confirm = false; render(el); });
