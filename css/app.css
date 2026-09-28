@@ -803,3 +803,20 @@ button.name.is-edit:active { transform: translateY(1px); filter: brightness(.95)
 .wl { font-size: 12px; padding: 0 6px; border-radius: 5px; background: #f1f0ec; color: var(--fg-dim); }
 .wl-off { background: color-mix(in srgb, var(--off) 14%, #ffffff); color: var(--off); font-weight: 700; }
 .wl-shoot { background: color-mix(in srgb, var(--shoot) 14%, #ffffff); color: var(--shoot); font-weight: 700; }
+/* ── 休み希望を直す板（9/29・shiftedit.js openWish）── */
+.wish-line.memo-btn { white-space: normal; width: 100%; overflow: visible; }
+.wa-row.is-blank { padding-block: 4px; }
+.wa-row.is-blank .wa-date b { font-size: 15px; color: var(--fg-faint); }
+.wa-row.is-blank .wa-date .sun { color: color-mix(in srgb, var(--ng) 55%, #ffffff); }
+.wa-row.is-blank .wa-date .sat { color: color-mix(in srgb, var(--accent) 55%, #ffffff); }
+.wa-none { color: var(--line2); font-size: 13px; }
+.wish-edit { display: grid; gap: 8px; }
+.we-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.we-row .wa-who { flex: none; width: 84px; font-size: 13px; padding: 2px 4px; margin-right: 0; text-align: center; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; }
+.we-seg { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr 1fr 1fr 1.3fr; }
+.we-seg .wk-btn { min-height: 36px; font-size: 13px; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.we-seg .wk-b-off[aria-pressed="true"] { background: var(--off); color: #fff; }
+.we-seg .wk-b-shoot[aria-pressed="true"] { background: var(--shoot); color: #fff; }
+.we-seg .wk-b-note[aria-pressed="true"] { background: #6b6f77; color: #fff; }
+.we-memo { flex-basis: 100%; display: flex; gap: 6px; padding-left: 90px; }
+.we-memo input { flex: 1; min-width: 0; font-size: 16px; }
