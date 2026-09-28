@@ -613,3 +613,17 @@ h1.brand { margin: 0; line-height: 0; }
   transition: transform .06s, box-shadow .06s;
 }
 .scal-cell:not(.is-blank):active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(60, 50, 30, .18); }
+/* 9/29 Naoto「場のボタンの塗りつぶしをもっと薄く／昼と夜の真ん中に横線」
+   地＝開催区分の色を約15%だけ敷く・字と枠＝その色。立体感（上の光・下の影）は残す */
+.rb {
+  background: color-mix(in srgb, var(--kc) 14%, #ffffff);
+  color: var(--kc);
+  border: 1px solid color-mix(in srgb, var(--kc) 55%, #ffffff);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 2px 3px rgba(60, 50, 30, .14);
+}
+.rb:active { box-shadow: inset 0 1px 2px rgba(60, 50, 30, .2); }
+.rb-g { color: var(--kc); opacity: .85; }
+.rb-g.is-g { color: #8a5d00; opacity: 1; }
+.slot-sep { border: 0; border-top: 1px solid var(--line); margin: 2px 0 4px; width: 100%; }/* 薄くするとナイター（紺）とミッド（黒）がどちらも灰色に見える→ナイターは塗りを濃く（青みを残す）・ミッドは塗りを薄く枠を濃く */
+.rb.kc-night { background: color-mix(in srgb, var(--kc) 22%, #ffffff); }
+.rb.kc-mid { background: color-mix(in srgb, var(--kc) 7%, #ffffff); border-color: var(--kc); }
