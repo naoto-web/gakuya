@@ -30,6 +30,8 @@ var APP = (function () {
     var t = TABS.filter(function (x) { return x.id === tab; })[0];
     var view = document.getElementById('view');
     if (t.id === 'shift') { SHIFT.render(); return; }
+    // 管理者の休み希望＝シートに入っている希望の一覧（wishadmin.js）。配信者は今までどおり準備中
+    if (t.id === 'wish' && window.WISHADMIN && WISHADMIN.can(me)) { WISHADMIN.render(); return; }
     view.innerHTML = '<h1 class="screen-title">' + t.label + '</h1><div class="card"><span class="pill dim" style="justify-self:start">準備中</span><p>' + t.soon + '</p></div>';
   }
 
@@ -100,9 +102,12 @@ var APP = (function () {
 
   // アプリに戻ってきたらシフトを取り直す（シートは管理者が随時直すため）
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && me && tab === 'shift') SHIFT.reload();
+    if (document.visibilityState === 'visible' && me && (tab === 'shift' || tab === 'wish')) SHIFT.reload();
   });
 
   boot();
-  return { toast: toast, current: function () { return tab; } };
+  // ほかの画面からタブを切り替える（休み希望の行→その日のシフト）
+  function go(id) { tab = id; render(); window.scrollTo(0, 0); }
+
+  return { toast: toast, current: function () { return tab; }, go: go };
 })();
