@@ -700,4 +700,9 @@ h1.brand { margin: 0; line-height: 0; }
 .lc.is-solo { background: #eceef1; color: #4a4f58; border-left: 3px solid #5a5f69; font-weight: 700; }
 .lc.is-empty { border-left-width: 1px; }
 .dl-slot.dl-day { background: #fffaf0; }
-.dl-slot.dl-night { background: #f3f4fb; }
+.dl-slot.dl-night { background: #f3f4fb; }/* 9/29 Naoto「左の帯いらない・名前の枠は付けて・自分以外は薄塗り」
+   全員＝メンバーカラーの枠（四辺）。自分以外＝薄い地（15%）＋黒系の字／自分＝塗りつぶし＋白（黄は黒）の字 */
+.lc { border: 1.5px solid var(--mc); border-left-width: 1.5px; background: color-mix(in srgb, var(--mc) 15%, #ffffff); color: #2a2d33; box-sizing: border-box; line-height: 1.55; }
+.lc.is-me { background: var(--mc); color: var(--ink); font-weight: 700; box-shadow: none; }
+.lc.is-solo { border: 1.5px solid #5a5f69; background: #eceef1; color: #4a4f58; }
+.lc.is-empty { border: 1px dashed var(--line2); }
