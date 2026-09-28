@@ -276,7 +276,8 @@ var SHIFT = (function () {
     var info = function (n) { return u.wishInfo(w[n]) || { k: 'half', label: w[n] }; };
     var names = Object.keys(w).sort(function (a, b) { return u.WISH_ORDER[info(a).k] - u.WISH_ORDER[info(b).k]; });
     return '<button type="button" class="memo memo-btn wish-line" data-edit-wish="' + date + '">休み希望：' + (names.length ? names.map(function (n) {
-      return '<span class="wl wl-' + info(n).k + '">' + u.esc(n) + ' ' + u.esc(info(n).label) + '</span>';
+      var hb = info(n).k === 'half' && info(n).ng ? ' style="background:' + u.halfBg(info(n).ng, 'color-mix(in srgb, var(--half) 24%, #ffffff)') + '"' : '';  // 半休＝出られる所だけ塗る
+      return '<span class="wl wl-' + info(n).k + '"' + hb + '>' + u.esc(n) + ' ' + u.esc(info(n).label) + '</span>';
     }).join('') : '<span class="faint">なし</span>') + ' ✎</button>';
   }
 
