@@ -583,3 +583,33 @@ h1.brand { margin: 0; line-height: 0; }
 .vn .gb { margin: 0 1px 0 0; font-size: 10px; padding: 2px 3px; }
 .vd { font-weight: 500; color: var(--fg-dim); }
 .vk { font-size: 9px; font-weight: 700; color: var(--fg-dim); border: 1px solid var(--line2); border-radius: 3px; padding: 0 3px; line-height: 1.4; }
+/* 9/29 Naoto：レース情報を札（ボタン）に。地の色＝コンソールの開催区分の色（console.css §91 と同じ値）
+   モーニング＝朝焼け／デイ＝青空／ナイター＝紺／ミッド＝黒。立体感もコンソールのバッジと同じ（上に光・下に影） */
+.kc-morning { --kc: #c0582a; --kc-b: #86391a; }
+.kc-day     { --kc: #1f7fd1; --kc-b: #155a96; }
+.kc-night   { --kc: #1f3a68; --kc-b: #10223f; }
+.kc-mid     { --kc: #2b2f36; --kc-b: #0f1114; }
+.venues { gap: 6px; margin: 0 0 6px; }
+.rb {
+  display: inline-flex; align-items: baseline; gap: 5px;
+  min-height: 32px; padding: 5px 10px; box-sizing: border-box;
+  background: var(--kc); color: #ffffff; border: 1px solid var(--kc-b); border-radius: 8px;
+  font-size: 13px; font-weight: 700; line-height: 1.2; white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 4px rgba(0, 0, 0, .25);
+  -webkit-tap-highlight-color: transparent;
+}
+.rb:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .3); }
+.rb-g { font-size: 12px; opacity: .92; }
+.rb-g.is-g { color: #f3d38a; opacity: 1; }
+.rb-d { font-family: "Barlow Condensed", "Zen Kaku Gothic New", sans-serif; font-size: 15px; min-width: .9em; text-align: center; }
+.kc-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; font-size: 11px; color: var(--fg-dim); margin-top: 2px; }
+.kc-dot { width: 10px; height: 10px; border-radius: 3px; background: var(--kc); margin-left: 6px; }
+.kc-legend .kc-dot:first-child { margin-left: 0; }
+
+/* カレンダーの日付を少し立体的に（上に光・下に影・押すと沈む） */
+.scal-cell:not(.is-blank) {
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, .75), rgba(255, 255, 255, 0) 60%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 2px 0 rgba(60, 50, 30, .10), 0 3px 6px rgba(60, 50, 30, .10);
+  transition: transform .06s, box-shadow .06s;
+}
+.scal-cell:not(.is-blank):active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(60, 50, 30, .18); }
