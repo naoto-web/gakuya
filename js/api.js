@@ -9,6 +9,7 @@ var API = (function () {
     if (!j || !j.ok) {
       var err = new Error((j && j.error) || 'error');
       err.code = j && j.error;
+      err.data = j;  // 編集の食い違い（conflict）は今の中身 current を持って返ってくる
       throw err;
     }
     return j;
@@ -35,6 +36,11 @@ var API = (function () {
   return {
     me: function () { return get('me'); },
     shift: function (ym) { return get('shift', { ym: ym }); },
-    publish: function (ym, on) { return post('publish', { ym: ym, on: on }); }
+    publish: function (ym, on) { return post('publish', { ym: ym, on: on }); },
+    // シフトの編集（管理者だけ）。expect＝画面で見ていた中身（シートで変わっていたら書かずに conflict）
+    setSlot: function (ym, date, slot, value, expect) { return post('set', { ym: ym, date: date, slot: slot, value: value, expect: expect }); },
+    setMemo: function (ym, date, value, expect) { return post('memo', { ym: ym, date: date, value: value, expect: expect }); },
+    lock: function (ym, date, slots, on, expect) { return post('lock', { ym: ym, date: date, slots: slots, on: on, expect: expect }); },
+    bulk: function (ym, op) { return post('bulk', { ym: ym, op: op }); }
   };
 })();
