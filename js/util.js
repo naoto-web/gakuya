@@ -29,6 +29,48 @@
     esc: (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
     // 9/29 14:02
     stamp: (iso) => { const d = new Date(iso); return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; },
+    // 日本の祝日 { 'YYYY-MM-DD': '祝日名' }（9/29 Naoto「祝日も日付は赤字に」）
+    //   現行の祝日法どおりに計算：固定日・ハッピーマンデー・春分/秋分（1980〜2099の近似式）・
+    //   振替休日（日曜の祝日→次の平日）・国民の休日（祝日に挟まれた平日）。法改正があればここを直す
+    holidays: (() => {
+      const cache = {};
+      const nthMon = (y, m, n) => { const d = new Date(y, m - 1, 1); const off = (8 - d.getDay()) % 7; return 1 + off + (n - 1) * 7; };
+      return (y) => {
+        if (cache[y]) return cache[y];
+        const h = {};
+        const put = (m, d, name) => { h[`${y}-${pad(m)}-${pad(d)}`] = name; };
+        const k = y - 1980;
+        put(1, 1, '元日');
+        put(1, nthMon(y, 1, 2), '成人の日');
+        put(2, 11, '建国記念の日');
+        put(2, 23, '天皇誕生日');
+        put(3, Math.floor(20.8431 + 0.242194 * k - Math.floor(k / 4)), '春分の日');
+        put(4, 29, '昭和の日');
+        put(5, 3, '憲法記念日'); put(5, 4, 'みどりの日'); put(5, 5, 'こどもの日');
+        put(7, nthMon(y, 7, 3), '海の日');
+        put(8, 11, '山の日');
+        put(9, nthMon(y, 9, 3), '敬老の日');
+        put(9, Math.floor(23.2488 + 0.242194 * k - Math.floor(k / 4)), '秋分の日');
+        put(10, nthMon(y, 10, 2), 'スポーツの日');
+        put(11, 3, '文化の日');
+        put(11, 23, '勤労感謝の日');
+        // 国民の休日：前日と翌日が祝日の平日（例 2026-09-22）
+        Object.keys(h).forEach((s) => {
+          const d = parse(s); d.setDate(d.getDate() + 2);
+          const mid = new Date(d); mid.setDate(mid.getDate() - 1);
+          if (h[ymd(d)] && !h[ymd(mid)] && mid.getDay() !== 0) h[ymd(mid)] = '国民の休日';
+        });
+        // 振替休日：日曜の祝日のあと、最初の祝日でない日
+        Object.keys(h).sort().forEach((s) => {
+          const d = parse(s);
+          if (d.getDay() !== 0 || h[s] === '振替休日') return;
+          do { d.setDate(d.getDate() + 1); } while (h[ymd(d)]);
+          h[ymd(d)] = '振替休日';
+        });
+        return (cache[y] = h);
+      };
+    })(),
+    holidayOf: (s) => OKL.u.holidays(+s.slice(0, 4))[s] || '',
     // 塗りの上の字の色：明るい色（黄など）は黒字、それ以外は白字（メンバーカラーの札で使う）
     inkOn: (hex) => {
       const n = parseInt(String(hex).slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
