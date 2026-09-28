@@ -191,6 +191,59 @@ var EDIT = (function () {
     });
   }
 
+  // ── その日の休み希望（9/29 Naoto「アプリ側から休み希望を編集したい」） ──
+  //   人ごとに［なし｜休｜撮影｜メモ］。押したらその場で保存（シフトの枠と同じ順番待ち）。
+  //   メモ＝「ミッドのみ」などの自由な書き込み（候補外にはならず、表示だけ）
+  function wishOf(date, name) { return ((((data().edit || {}).wish) || {})[date] || {})[name] || ''; }
+  function setWish(date, name, value) {
+    var d = data();
+    var expect = wishOf(date, name);
+    if (expect === value) return;
+    d.edit.wish = d.edit.wish || {};
+    var w = d.edit.wish[date] = d.edit.wish[date] || {};
+    if (value) w[name] = value; else delete w[name];
+    if (!Object.keys(w).length) delete d.edit.wish[date];
+    var ym = d.ym;
+    enqueue(function () { return API.setWish(ym, date, name, value, expect); }, name + 'の休み希望');
+  }
+  function openWish(date, opt) {
+    var editing = '';   // メモを書いている人
+    function body() {
+      return head(dateLabel(date) + '　休み希望', '押すとその場で保存します。「休」「撮影」の人はシフトの候補外になります') +
+        '<div class="wish-edit">' + H.members().map(function (m) {
+          var v = wishOf(date, m.name);
+          var k = !v ? 'none' : /撮影/.test(v) ? 'shoot' : /休/.test(v) ? 'off' : 'note';
+          var b = function (key, label) {
+            return '<button type="button" data-wk="' + key + '" data-wn="' + u.esc(m.name) + '" aria-pressed="' + (k === key) + '" class="wk-btn wk-b-' + key + '">' + label + '</button>';
+          };
+          return '<div class="we-row"><span class="wa-who" style="--mc:' + (m.color || '#9aa0aa') + '">' + u.esc(m.name) + '</span>' +
+            '<span class="seg we-seg">' + b('none', 'なし') + b('off', '休') + b('shoot', '撮影') + b('note', k === 'note' ? u.esc(v) : 'メモ') + '</span>' +
+            (editing === m.name ? '<div class="we-memo"><input type="text" class="date-input" maxlength="30" placeholder="例：ミッドのみ" value="' + (k === 'note' ? u.esc(v) : '') + '">' +
+              '<button type="button" class="btn btn-sm" data-memo-save="' + u.esc(m.name) + '">保存</button></div>' : '') + '</div>';
+        }).join('') + '</div>' +
+        (opt && opt.toShift ? '<button type="button" class="btn ghost" id="we-shift">この日のシフトを開く</button>' : '');
+    }
+    open(body(), function bindAll(el) {
+      el.querySelectorAll('[data-wk]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var n = b.dataset.wn, key = b.dataset.wk;
+          if (key === 'note') { editing = editing === n ? '' : n; }
+          else { editing = ''; setWish(date, n, key === 'off' ? '休' : key === 'shoot' ? '撮影' : ''); }
+          el.innerHTML = body(); bindAll(el);
+          var inp = el.querySelector('.we-memo input');
+          if (inp) inp.focus();
+        });
+      });
+      var ms = el.querySelector('[data-memo-save]');
+      if (ms) ms.addEventListener('click', function () {
+        setWish(date, ms.dataset.memoSave, el.querySelector('.we-memo input').value.trim());
+        editing = ''; el.innerHTML = body(); bindAll(el);
+      });
+      var ts = el.querySelector('#we-shift');
+      if (ts) ts.addEventListener('click', function () { close(); opt.toShift(); });
+    });
+  }
+
   // ── 月まとめての操作（シートのPCメニューと同じ） ──
   var OPS = [
     { op: 'autofill', label: '🤖自動入力', desc: '空欄のうち、入れる人が1人しかいない枠を埋めます（確定にはしません）' },
@@ -247,6 +300,7 @@ var EDIT = (function () {
     openSlot: openSlot,
     openMemo: openMemo,
     openMenu: openMenu,
+    openWish: openWish,
     lockDay: function (date, on) { lockSlots(date, [0, 1, 2, 3], on); }
   };
 })();
