@@ -192,6 +192,28 @@ var SHIFT = (function () {
       '<span class="sw-item"><span class="blk-key blk-day">上</span>昼<span class="blk-key blk-night">下</span>夜</span></div>';
   }
 
+  // 半休の日のマス＝その枠の半分だけ塗る（9/29 Naoto「ミッドのみなら夜の色で右半分だけ」）
+  //   昼のマス＝左モーニング｜右デイ／夜のマス＝左ナイター｜右ミッド。出られない側は白地に薄い斜線
+  //   希望の出どころ＝管理者は edit.wish（強調中の人）／配信者は本人の分だけの myWish
+  var CELL_BG = { '昼': '#fff3c4', '夜': '#e3e6f8' };
+  function wishFor(date, me) {
+    var d = st.data;
+    if (isAdmin()) return (((d.edit || {}).wish || {})[date] || {})[me] || '';
+    return (d.myWish || {})[date] || '';
+  }
+  function halfCell(date, me, slot) {
+    if (!slot) return '';
+    var i = u.wishInfo(wishFor(date, me));
+    if (!i || i.k !== 'half' || !i.ng) return '';
+    var qs = slot === '昼' ? [0, 1] : [2, 3];
+    var ngL = i.ng.indexOf(qs[0]) >= 0, ngR = i.ng.indexOf(qs[1]) >= 0;
+    if (!ngL && !ngR) return '';
+    var c = CELL_BG[slot];
+    return ' style="background-color:#ffffff;background-image:linear-gradient(to bottom, rgba(255,255,255,.75), rgba(255,255,255,0) 60%),' +
+      'linear-gradient(90deg,' + (ngL ? 'transparent' : c) + ' 0 50%,' + (ngR ? 'transparent' : c) + ' 50% 100%),' +
+      'repeating-linear-gradient(135deg,#ffffff 0 4px,#e9e7e1 4px 6px)"';
+  }
+
   function calendar(rows, me, today, all) {
     var first = (u.dow(rows[0].date) + 6) % 7;
     var h = '';
@@ -202,7 +224,7 @@ var SHIFT = (function () {
       // 自分の出勤日はマスごと塗る：昼＝薄い黄／夜＝紺（9/29 Naoto）
       var cls = ['scal-cell', slot === '昼' ? 'is-mine-day' : slot === '夜' ? 'is-mine-night' : '',
         r.date === today ? 'is-today' : '', r.date === st.sel ? 'is-sel' : ''].join(' ');
-      h += '<button type="button" class="' + cls + '" data-date="' + r.date + '" aria-pressed="' + (r.date === st.sel) + '" aria-label="' + u.md(r.date) + (slot ? '・' + slot + 'の出番' : '') + (r.grade ? '・' + u.esc(r.grade.name) : '') + '">' +
+      h += '<button type="button" class="' + cls + '"' + halfCell(r.date, me, slot) + ' data-date="' + r.date + '" aria-pressed="' + (r.date === st.sel) + '" aria-label="' + u.md(r.date) + (slot ? '・' + slot + 'の出番' : '') + (r.grade ? '・' + u.esc(r.grade.name) : '') + '">' +
         '<span class="scal-top"><span class="scal-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span>' +
         // グレードの札は「本人がその日その時間帯に出る」ときだけ（夜に出る日の昼Gは出さない・9/29 Naoto）。
         //   管理者で誰も強調していないときは全部出す（全体を見る画面なので）
