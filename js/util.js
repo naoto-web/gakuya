@@ -118,6 +118,17 @@
       }).join(', ');
       return `linear-gradient(90deg, ${stops}), repeating-linear-gradient(135deg, #ffffff 0 4px, #eeede9 4px 6px)`;
     },
+    // 1つの枠の札を左右半分で塗り分ける（昼＝左モ｜右デ／夜＝左ナ｜右ミ）。出られない側は ngColor（省略＝白地に薄い斜線）
+    //   半休でその枠にかからなければ ''（普段どおりの塗り）
+    slotHalfBg: (ng, slot, okColor, ngColor) => {
+      if (!ng) return '';
+      const qs = slot === '昼' ? [0, 1] : [2, 3];
+      const L = ng.indexOf(qs[0]) >= 0, R = ng.indexOf(qs[1]) >= 0;
+      if (!L && !R) return '';
+      const n = ngColor || 'transparent';
+      return `linear-gradient(90deg, ${L ? n : okColor} 0 50%, ${R ? n : okColor} 50% 100%)` +
+        (ngColor ? '' : ', repeating-linear-gradient(135deg, #ffffff 0 4px, #eeede9 4px 6px)');
+    },
     wishText: (ng) => ng && ng.length ? '半（' + ng.slice().sort().map((i) => OKL.u.Q4S[i]).join('・') + 'NG）' : '',
     WISH_ORDER: { off: 0, half: 1, shoot: 2 },
     // 同じ種から毎回同じ乱数（サンプルを安定させる）
