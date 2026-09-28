@@ -14,5 +14,9 @@ var CONFIG = (function () {
   } else {
     try { key = localStorage.getItem(KEY_LS) || ''; } catch (e) { key = ''; }
   }
-  return { GAS_URL: GAS_URL, KEY_LS: KEY_LS, KEY: key };
+  // 管理者のプレビュー（「配信者として見る」）で選んだ人。GASは管理者の鍵のときだけこれを聞く
+  var AS_LS = 'gakuya:as';
+  var as = '';
+  try { as = localStorage.getItem(AS_LS) || ''; } catch (e) { as = ''; }
+  return { GAS_URL: GAS_URL, KEY_LS: KEY_LS, KEY: key, AS_LS: AS_LS, AS: as };
 })();
