@@ -548,3 +548,12 @@ h1.brand { margin: 0; line-height: 0; }
 .grade-line { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: var(--gold); }
 .grade-line .gb { font-size: 11px; padding: 2px 4px; margin: 0; }
 .name.mc.is-me { box-shadow: 0 0 0 2px var(--fg); }
+/* 9/29 Naoto「日を選んだ時の枠・右上の誰で見てるかもメンバーカラー／夜はちょっと暗すぎる」 */
+.scal-cell.is-sel { outline: 3px solid var(--sel, var(--accent)); outline-offset: 1px; }
+.who-name { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 14px; font-weight: 700; border: 1px solid var(--line2); }
+.who-sel.is-preview { font-weight: 700; }
+.who-sel option, .who-sel optgroup { color: #23252a; background: #ffffff; }
+/* 夜のマス：紺(#2d3561)→明るめの藍。白字が読める明るさ（白とのコントラスト約4.6）にとどめる */
+.scal-cell.is-mine-night { background: #5f6bb5; border-color: #5f6bb5; }
+.scal-cell.is-mine-night.is-today .scal-d { color: #5f6bb5; }
+.lg-night { background: #5f6bb5; }
