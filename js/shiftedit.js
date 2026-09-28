@@ -33,6 +33,9 @@ var EDIT = (function () {
     }
     var w = ((ctx.wish || {})[date] || {})[name];
     if (w && WISH_RE.test(w)) out.push('休み希望「' + w + '」');
+    // 半休：この枠の2区分（昼＝モ・デ／夜＝ナ・ミ）が両方NGなら候補外。片方だけなら候補のまま注意書き（wishNote）
+    var hi = u.wishInfo(w);
+    if (hi && hi.k === 'half' && hi.ng && slotQ(s).every(function (q) { return hi.ng.indexOf(q) >= 0; })) out.push('半休（' + (s < 2 ? '昼' : '夜') + 'はNG）');
     if (s < 2) {
       var pn = i === 0 ? (ctx.prevNight || []) : rows[i - 1].night;
       if (pn.indexOf(name) >= 0) out.push('夜明け（前日の夜）');
@@ -50,10 +53,15 @@ var EDIT = (function () {
     data().rows.forEach(function (r) { r.day.concat(r.night).forEach(function (v) { if (v === name) n++; }); });
     return n;
   }
-  // 休み希望に「休」「撮影」以外（例：ミッドのみ）が書いてある＝候補のままメモとして見せる
-  function wishNote(date, name) {
+  function slotQ(s) { return s < 2 ? [0, 1] : [2, 3]; }
+  // 半休でこの枠の片方だけNG（例：昼枠でモーニングだけNG）＝候補のまま注意書き。読めない書き込みはそのまま見せる
+  function wishNote(date, name, s) {
     var w = (((data().edit || {}).wish || {})[date] || {})[name];
-    return w && !WISH_RE.test(w) ? w : '';
+    var hi = u.wishInfo(w);
+    if (!hi || hi.k !== 'half') return '';
+    if (!hi.ng) return hi.raw;
+    var hit = slotQ(s).filter(function (q) { return hi.ng.indexOf(q) >= 0; });
+    return hit.length ? '半休：' + hit.map(function (q) { return u.Q4[q]; }).join('・') + 'NG' : '';
   }
 
   // ── 下から出る板 ──
@@ -138,7 +146,7 @@ var EDIT = (function () {
     function item(x, isNg) {
       var c = x.m.color || '#9aa0aa';
       var n = countOf(x.m.name), lim = x.m.limit;
-      var note = isNg ? x.why.join('・') : wishNote(date, x.m.name);
+      var note = isNg ? x.why.join('・') : wishNote(date, x.m.name, s);
       return '<button type="button" class="pick' + (isNg ? ' is-ng' : '') + (x.m.name === cur ? ' is-cur' : '') + '" data-pick="' + u.esc(x.m.name) + '" style="--mc:' + c + '">' +
         '<span class="pick-name">' + u.esc(x.m.name) + '</span>' +
         '<span class="pick-cnt num">' + n + (lim ? '/' + lim : '') + '</span>' +
@@ -192,8 +200,9 @@ var EDIT = (function () {
   }
 
   // ── その日の休み希望（9/29 Naoto「アプリ側から休み希望を編集したい」） ──
-  //   人ごとに［なし｜休｜撮影｜メモ］。押したらその場で保存（シフトの枠と同じ順番待ち）。
-  //   メモ＝「ミッドのみ」などの自由な書き込み（候補外にはならず、表示だけ）
+  //   人ごとに［なし｜休｜半｜撮影］（🔄同日 Naoto「他→半・順番は休→半→撮影」）。押したらその場で保存（シフトの枠と同じ順番待ち）。
+  //   半＝半休。1日を4分割（モーニング・デイ・ナイター・ミッド）して、出られない所を選んで「保存」。
+  //     4つ全部NG＝「休」として書く／何も選ばず保存＝希望なし
   function wishOf(date, name) { return ((((data().edit || {}).wish) || {})[date] || {})[name] || ''; }
   function setWish(date, name, value) {
     var d = data();
@@ -207,37 +216,53 @@ var EDIT = (function () {
     enqueue(function () { return API.setWish(ym, date, name, value, expect); }, name + 'の休み希望');
   }
   function openWish(date, opt) {
-    var editing = '';   // メモを書いている人
+    var editing = '';   // 半休を選んでいる人
+    var pick = [];      // その人のNGの区分（0〜3）
     function body() {
-      return head(dateLabel(date) + '　休み希望', '押すとその場で保存します。「休」「撮影」の人はシフトの候補外になります') +
+      return head(dateLabel(date) + '　休み希望', '押すとその場で保存します。「休」「撮影」の人はシフトの候補外。半休は出られない所を選んで保存') +
         '<div class="wish-edit">' + H.members().map(function (m) {
           var v = wishOf(date, m.name);
-          var k = !v ? 'none' : /撮影/.test(v) ? 'shoot' : /休/.test(v) ? 'off' : 'note';
+          var info = u.wishInfo(v);
+          var k = info ? info.k : 'none';
           var b = function (key, label) {
-            return '<button type="button" data-wk="' + key + '" data-wn="' + u.esc(m.name) + '" aria-pressed="' + (k === key) + '" class="wk-btn wk-b-' + key + '">' + label + '</button>';
+            return '<button type="button" data-wk="' + key + '" data-wn="' + u.esc(m.name) + '" aria-pressed="' + (k === key || (key === 'half' && editing === m.name)) + '" class="wk-btn wk-b-' + key + '">' + label + '</button>';
           };
+          // 札には「半 モデナ」のように頭文字だけ（全部書くと切れる）
+          var halfLabel = k === 'half' ? (info.ng ? '半 ' + info.ng.map(function (q) { return u.Q4S[q]; }).join('') : '半 ?') : '半';
           return '<div class="we-row"><span class="wa-who" style="--mc:' + (m.color || '#9aa0aa') + '">' + u.esc(m.name) + '</span>' +
-            '<span class="seg we-seg">' + b('none', 'なし') + b('off', '休') + b('shoot', '撮影') + b('note', k === 'note' ? u.esc(v) : 'メモ') + '</span>' +
-            (editing === m.name ? '<div class="we-memo"><input type="text" class="date-input" maxlength="30" placeholder="例：ミッドのみ" value="' + (k === 'note' ? u.esc(v) : '') + '">' +
-              '<button type="button" class="btn btn-sm" data-memo-save="' + u.esc(m.name) + '">保存</button></div>' : '') + '</div>';
+            '<span class="seg we-seg">' + b('none', 'なし') + b('off', '休') + b('half', halfLabel) + b('shoot', '撮影') + '</span>' +
+            (editing === m.name ? '<div class="we-half"><span class="we-cap">出られない所</span><span class="we-q">' + u.Q4.map(function (q, i) {
+              return '<button type="button" class="q-btn q-' + i + '" data-q="' + i + '" aria-pressed="' + (pick.indexOf(i) >= 0) + '">' + q + '</button>';
+            }).join('') + '</span><button type="button" class="btn btn-sm" data-half-save="' + u.esc(m.name) + '">保存</button></div>' : '') + '</div>';
         }).join('') + '</div>' +
         (opt && opt.toShift ? '<button type="button" class="btn ghost" id="we-shift">この日のシフトを開く</button>' : '');
     }
     open(body(), function bindAll(el) {
+      var redraw = function () { el.innerHTML = body(); bindAll(el); };
       el.querySelectorAll('[data-wk]').forEach(function (b) {
         b.addEventListener('click', function () {
           var n = b.dataset.wn, key = b.dataset.wk;
-          if (key === 'note') { editing = editing === n ? '' : n; }
-          else { editing = ''; setWish(date, n, key === 'off' ? '休' : key === 'shoot' ? '撮影' : ''); }
-          el.innerHTML = body(); bindAll(el);
-          var inp = el.querySelector('.we-memo input');
-          if (inp) inp.focus();
+          if (key === 'half') {
+            if (editing === n) { editing = ''; } else {
+              editing = n;
+              var hi = u.wishInfo(wishOf(date, n));
+              pick = hi && hi.k === 'half' && hi.ng ? hi.ng.slice() : [];
+            }
+          } else { editing = ''; setWish(date, n, key === 'off' ? '休' : key === 'shoot' ? '撮影' : ''); }
+          redraw();
         });
       });
-      var ms = el.querySelector('[data-memo-save]');
-      if (ms) ms.addEventListener('click', function () {
-        setWish(date, ms.dataset.memoSave, el.querySelector('.we-memo input').value.trim());
-        editing = ''; el.innerHTML = body(); bindAll(el);
+      el.querySelectorAll('[data-q]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var q = +b.dataset.q, i = pick.indexOf(q);
+          if (i >= 0) pick.splice(i, 1); else pick.push(q);
+          redraw();
+        });
+      });
+      var hs = el.querySelector('[data-half-save]');
+      if (hs) hs.addEventListener('click', function () {
+        setWish(date, hs.dataset.halfSave, pick.length === 4 ? '休' : u.wishText(pick));
+        editing = ''; redraw();
       });
       var ts = el.querySelector('#we-shift');
       if (ts) ts.addEventListener('click', function () { close(); opt.toShift(); });
