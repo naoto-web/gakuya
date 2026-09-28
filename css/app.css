@@ -847,3 +847,13 @@ button.name.is-edit:active { transform: translateY(1px); filter: brightness(.95)
 /* 半休の中身（例：ミッドのみ出勤）を板の行の下に */
 .we-say { flex-basis: 100%; padding-left: 90px; font-size: 12px; font-weight: 700; color: var(--half); margin-top: -2px; }
 .we-cap b { color: var(--half); }
+
+/* 全体の編集モード（9/29 Naoto「全体に編集モード」）：札は見た目そのままで押せる。編集中は昼夜の欄を点線で囲む */
+button.lc { font-family: inherit; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button.lc:active { filter: brightness(.93); }
+.dl-head .dl-edit { justify-self: start; padding: 2px 6px; font-size: 11px; }
+.dl-head .dl-edit[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.dl-row.is-editing .dl-slot { outline: 1px dashed var(--line2); outline-offset: -1px; }
+.dl-row.is-editing .lc { min-height: 26px; }
+.dl-open { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.danger-note { color: var(--ng); }
