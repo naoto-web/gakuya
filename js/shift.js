@@ -5,7 +5,9 @@
    ・シートの空欄＝「未定」、シートに「空き」＝その枠は人を入れない（1人配信など） */
 var SHIFT = (function () {
   var u = window.OKL.u;
-  var st = { me: null, data: null, ym: null, sel: null, focus: '', loading: false, err: '', confirm: false, fetchedAt: null };
+  var st = { me: null, data: null, ym: null, sel: null, focus: '', loading: false, err: '', confirm: false, fetchedAt: null, mode: 'me' };
+  // 個人／全体は端末に覚える（開き直しても前の表示で出る）
+  try { if (localStorage.getItem('gakuya:mode') === 'all') st.mode = 'all'; } catch (e) { /* 覚えられなくても動く */ }
 
   function isAdmin() { return st.me && st.me.role === 'admin'; }
   function target() { return isAdmin() ? st.focus : st.me.name; }
@@ -89,7 +91,7 @@ var SHIFT = (function () {
 
   function chip(name, me, locked) {
     if (!name) return '<span class="name is-empty">未定</span>';
-    if (name === '空き') return '<span class="name is-aki">空き</span>';
+    if (name === '空き') return '<span class="name is-solo">1人配信</span>';  // 「空き」＝その枠は1人配信（9/29 Naoto「もっと一人配信って分かるように」）
     return '<span class="name mc' + (name === me ? ' is-me' : '') + '"' + colorStyle(name) + '>' + (locked ? '<span class="lock" aria-label="確定">🔒</span>' : '') + u.esc(name) + '</span>';
   }
 
@@ -135,13 +137,35 @@ var SHIFT = (function () {
 
   // 🔑月曜始まり（9/29 Naoto）。u.dow は日曜=0 なので (曜日+6)%7 で月曜=0 に直す
   var HEAD = ['月', '火', '水', '木', '金', '土', '日'];
-  function calendar(rows, me, today) {
+  // 全体モードのマス：上＝昼・下＝夜の2段に、入っている人をメンバーカラーの四角で（9/29 Naoto「全体」のたたき台）
+  //   空き＝1人配信（灰の斜線）／空欄＝未定（点線）／自分（管理者は強調中の人）は黒縁
+  function blocks(r, me) {
+    function row(pair, cls) {
+      return '<span class="blk-row ' + cls + '">' + pair.map(function (n) {
+        if (!n) return '<i class="blk is-open"></i>';
+        if (n === '空き') return '<i class="blk is-solo"></i>';
+        return '<i class="blk' + (n === me ? ' is-me' : '') + '" style="background:' + (colorOf(n) || '#9aa0aa') + '"></i>';
+      }).join('') + '</span>';
+    }
+    return row(r.day, 'blk-day') + row(r.night, 'blk-night');
+  }
+
+  // 全体モードの見本：メンバーカラーと名前・1人配信・未定
+  function allLegend(me) {
+    return '<div class="legend all-legend">' + (st.me.members || []).map(function (m) {
+      return '<span class="sw-item' + (m.name === me ? ' is-me' : '') + '"><i class="blk" style="background:' + (m.color || '#9aa0aa') + '"></i>' + u.esc(m.name) + '</span>';
+    }).join('') +
+      '<span class="sw-item"><i class="blk is-solo"></i>1人配信</span><span class="sw-item"><i class="blk is-open"></i>未定</span>' +
+      '<span class="sw-item"><span class="blk-key blk-day">上</span>昼<span class="blk-key blk-night">下</span>夜</span></div>';
+  }
+
+  function calendar(rows, me, today, all) {
     var first = (u.dow(rows[0].date) + 6) % 7;
     var h = '';
     for (var i = 0; i < first; i++) h += '<span class="scal-cell is-blank"></span>';
     rows.forEach(function (r) {
       var dw = u.dow(r.date);
-      var slot = mySlot(r, me);
+      var slot = all ? null : mySlot(r, me);
       // 自分の出勤日はマスごと塗る：昼＝薄い黄／夜＝紺（9/29 Naoto）
       var cls = ['scal-cell', slot === '昼' ? 'is-mine-day' : slot === '夜' ? 'is-mine-night' : '',
         r.date === today ? 'is-today' : '', r.date === st.sel ? 'is-sel' : ''].join(' ');
@@ -149,8 +173,8 @@ var SHIFT = (function () {
         '<span class="scal-top"><span class="scal-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span>' +
         // グレードの札は「本人がその日その時間帯に出る」ときだけ（夜に出る日の昼Gは出さない・9/29 Naoto）。
         //   管理者で誰も強調していないときは全部出す（全体を見る画面なので）
-        (me ? (slot && r.grade && r.grade.slot === slot ? gradeBadge(r.grade) : '') : gradeBadge(r.grade)) + '</span>' +
-        '<span class="scal-body">' + cellBody(r, me, slot) + '</span></button>';
+        (me && !all ? (slot && r.grade && r.grade.slot === slot ? gradeBadge(r.grade) : '') : gradeBadge(r.grade)) + '</span>' +
+        (all ? '<span class="scal-body is-all">' + blocks(r, me) + '</span></button>' : '<span class="scal-body">' + cellBody(r, me, slot) + '</span></button>');
     });
     return '<div class="cal-head mon">' + HEAD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="scal">' + h + '</div>';
   }
@@ -251,21 +275,26 @@ var SHIFT = (function () {
     // 🔑1画面に収める並び（9/29 Naoto）：見出し行 → 月 → （管理者だけ1行） → カレンダー（凡例と出勤数は枠の中の1行） → その日の詳細
     //   「シフト」の見出しの位置は管理者・配信者で同じ（管理者の追加分は月の切り替えより下にだけ入る）
     var at = st.fetchedAt ? u.pad(st.fetchedAt.getHours()) + ':' + u.pad(st.fetchedAt.getMinutes()) + '時点' : '';
+    var all = st.mode === 'all';
     el.innerHTML =
+      // 見出しの横に［個人｜全体］（9/29 Naoto）。個人＝自分の出番と相方／全体＝全員の入り方（色の四角）
       '<div class="title-row"><h1 class="screen-title">シフト</h1>' +
+      '<span class="seg seg-mode" role="group" aria-label="表示">' +
+      '<button type="button" data-mode="me" aria-pressed="' + !all + '">個人</button>' +
+      '<button type="button" data-mode="all" aria-pressed="' + all + '">全体</button></span>' +
       '<span class="title-aside">' + (st.loading ? '読み込み中…' : at) + ' <button type="button" class="link-btn" id="reload">最新にする</button></span></div>' +
       '<div class="seg seg-sm" role="group" aria-label="月">' + shown.map(function (m) {
         return '<button type="button" data-ym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + (isAdmin() && !m.published ? '<small class="seg-note">非公開</small>' : '') + '</button>';
       }).join('') + '</div>' +
       (isAdmin() ? publishBar(d) : '') +
       // 選んだ日の枠＝見ている人（管理者は強調中の人）のメンバーカラー（9/29 Naoto）
-      '<div class="card cal-card"' + (me && colorOf(me) ? ' style="--sel:' + colorOf(me) + '"' : '') + '>' + calendar(rows, me, today) +
-      '<div class="legend">' +
+      '<div class="card cal-card"' + (me && colorOf(me) ? ' style="--sel:' + colorOf(me) + '"' : '') + '>' + calendar(rows, me, today, all) +
+      (all ? allLegend(me) : '<div class="legend">' +
       (me ? '<span><span class="lg lg-day">昼</span><span class="lg lg-night">夜</span>＝' + (isAdmin() ? 'その人' : '自分') + 'の出番（中は相方）</span>' : '<span><span class="sm aki">未定</span>＝人が入っていない枠</span>') +
       '<span><span class="gb gb-day">昼G</span><span class="gb gb-night">夜G</span>＝グレード</span>' +
       // 出勤数は管理者（強調中）だけ。配信者の画面には出さない（9/29 Naoto「23枠/25って表示は消して」）
       (me ? '<span class="legend-count">' + (isAdmin() ? u.esc(me) + ' ' : '') + '<b class="num">' + count + '</b>日/' + rows.length + '日</span>' : '') +
-      '</div></div>' +
+      '</div>') + '</div>' +
       (selRow ? detail(selRow, me, today) : '');
     bind(el);
   }
@@ -275,6 +304,13 @@ var SHIFT = (function () {
     if (q('#reload')) q('#reload').addEventListener('click', function () { if (!st.loading) load(st.ym); });
     el.querySelectorAll('[data-ym]').forEach(function (b) { b.addEventListener('click', function () { st.sel = null; load(b.dataset.ym); }); });
     el.querySelectorAll('.scal-cell[data-date]').forEach(function (b) { b.addEventListener('click', function () { st.sel = b.dataset.date; render(el); }); });
+    el.querySelectorAll('[data-mode]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        st.mode = b.dataset.mode;
+        try { localStorage.setItem('gakuya:mode', st.mode); } catch (e) { /* 覚えられなくても切り替えは効く */ }
+        render(el);
+      });
+    });
     // レースの札：今は案内だけ。出走表ができたらここで data-venue・data-date を使って飛ぶ
     el.querySelectorAll('.rb').forEach(function (b) { b.addEventListener('click', function () { APP.toast(b.dataset.venue + 'の出走表は準備中です'); }); });
     if (q('#focus')) q('#focus').addEventListener('change', function () { st.focus = q('#focus').value; render(el); });
