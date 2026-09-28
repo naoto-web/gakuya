@@ -9,6 +9,11 @@ var WISHADMIN = (function () {
   var u = window.OKL.u;
   // 🔄9/29 Naoto「他→半・表示順は休→半→撮影」＝種類の判定は util.js の wishInfo にまとめた
   function kind(w) { var i = u.wishInfo(w); return i ? i.k : 'half'; }
+  // 半休＝出られる所だけ塗る（4等分・util.halfBg）。塗りは普段の札より少し濃く（30%）＝どこが塗られているか見える
+  function halfStyle(w, mc) {
+    var i = u.wishInfo(w);
+    return i && i.k === 'half' && i.ng ? ';background:' + u.halfBg(i.ng, 'color-mix(in srgb, ' + mc + ' 30%, #ffffff)') : '';
+  }
   function dayClass(date) {
     var dw = u.dow(date);
     if (dw === 0 || u.holidayOf(date)) return 'sun';
@@ -71,7 +76,7 @@ var WISHADMIN = (function () {
           '<span class="wa-date"><b class="num ' + dayClass(date) + '">' + Number(date.slice(8)) + '</b><small class="' + dayClass(date) + '">' + u.DOW[u.dow(date)] + '</small></span>' +
           '<span class="wa-chips">' + names.map(function (n) {
             var w = wish[date][n];
-            return '<span class="wa-chip wa-' + kind(w) + (clash(date, n) ? ' is-clash' : '') + '" style="--mc:' + colorOf(n) + '">' +
+            return '<span class="wa-chip wa-' + kind(w) + (clash(date, n) ? ' is-clash' : '') + '" style="--mc:' + colorOf(n) + halfStyle(w, colorOf(n)) + '">' +
               u.esc(n) + '<b>' + u.esc(u.wishInfo(w) ? u.wishInfo(w).label : w) + '</b>' + (clash(date, n) ? '<em>入っています</em>' : '') + '</span>';
           }).join('') + (names.length ? '' : '<span class="wa-none">—</span>') + '</span></button>';
       }).join('') + '</div>' : '<div class="card"><p class="sub">この月のシートがありません。</p></div>') +
