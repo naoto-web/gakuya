@@ -264,7 +264,18 @@ var SHIFT = (function () {
       (ed ? '<div class="edit-row"><button type="button" class="memo memo-btn" data-edit-memo="' + r.date + '">メモ：' + (r.memo ? u.esc(r.memo) : '<span class="faint">なし</span>') + ' ✎</button>' +
         '<button type="button" class="btn ghost btn-xs" data-lock-day="' + r.date + '" data-on="' + (allLocked ? '0' : '1') + '">' + (allLocked ? '確定を外す' : '🔒この日を確定') + '</button></div>'
         : (isAdmin() && r.memo ? '<p class="memo">メモ：' + u.esc(r.memo) + '</p>' : '')) +
+      (ed ? wishLine(r.date) : '') +
       '</div>';
+  }
+
+  // 管理者の編集中だけ：その日の休み希望（9/29 Naoto「休み希望が入った状態でいじりたい」）
+  function wishLine(date) {
+    var w = (st.data.edit && st.data.edit.wish && st.data.edit.wish[date]) || null;
+    if (!w) return '';
+    return '<p class="memo wish-line">休み希望：' + Object.keys(w).map(function (n) {
+      var k = /撮影/.test(w[n]) ? 'shoot' : /休/.test(w[n]) ? 'off' : 'note';
+      return '<span class="wl wl-' + k + '">' + u.esc(n) + ' ' + u.esc(w[n]) + '</span>';
+    }).join('') + '</p>';
   }
 
   // 管理者だけ：この月を配信者に見せるかどうか
@@ -401,8 +412,16 @@ var SHIFT = (function () {
 
   return {
     init: function (me) { st.me = me; return load(null); },
-    // 🔑読み込みの完了は別のタブを開いている最中に来ることがある＝シフトを表示中のときだけ描く
-    render: function () { if (APP.current() === 'shift') render(); },
-    reload: function () { return load(st.ym); }
+    // 🔑読み込みの完了は別のタブを開いている最中に来ることがある＝表示中のタブだけ描く
+    //   （管理者の休み希望タブはシフトと同じデータを使う＝wishadmin.js）
+    render: function () {
+      if (APP.current() === 'shift') render();
+      else if (APP.current() === 'wish' && window.WISHADMIN && WISHADMIN.can(st.me)) WISHADMIN.render();
+    },
+    reload: function () { return load(st.ym); },
+    // 休み希望タブから使う：今のデータ・月の切り替え・日付を選んだ状態にする
+    state: function () { return { data: st.data, loading: st.loading, members: (st.me && st.me.members) || [] }; },
+    go: function (ym) { st.sel = null; st.selAll = null; return load(ym); },
+    select: function (date) { st.sel = date; st.selAll = date; }
   };
 })();
