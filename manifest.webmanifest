@@ -1,14 +1,14 @@
 {
-  "name": "楽屋",
-  "short_name": "楽屋",
+  "name": "俺たちの競輪ライブ",
+  "short_name": "俺たちの競輪ライブ",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#e9e7e1",
   "theme_color": "#e9e7e1",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
