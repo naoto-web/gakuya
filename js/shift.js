@@ -31,10 +31,7 @@ var SHIFT = (function () {
     return m && m.color ? m.color : null;
   }
   // 塗りの上の字の色：明るい色（黄など）は黒字、それ以外は白字
-  function inkOn(hex) {
-    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
-    return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? '#23252a' : '#ffffff';
-  }
+  function inkOn(hex) { return u.inkOn(hex); }
   function colorStyle(name) {
     var c = colorOf(name);
     return c ? ' style="background:' + c + ';color:' + inkOn(c) + '"' : '';
@@ -162,7 +159,8 @@ var SHIFT = (function () {
         return '<button type="button" data-ym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + (isAdmin() && !m.published ? '<small class="seg-note">非公開</small>' : '') + '</button>';
       }).join('') + '</div>' +
       (isAdmin() ? publishBar(d) : '') +
-      '<div class="card cal-card">' + calendar(rows, me, today) +
+      // 選んだ日の枠＝見ている人（管理者は強調中の人）のメンバーカラー（9/29 Naoto）
+      '<div class="card cal-card"' + (me && colorOf(me) ? ' style="--sel:' + colorOf(me) + '"' : '') + '>' + calendar(rows, me, today) +
       '<div class="legend">' +
       (me ? '<span><span class="lg lg-day">昼</span><span class="lg lg-night">夜</span>＝' + (isAdmin() ? 'その人' : '自分') + 'の出番（中は相方）</span>' : '<span><span class="sm aki">未定</span>＝人が入っていない枠</span>') +
       '<span><span class="gb gb-day">昼G</span><span class="gb gb-night">夜G</span>＝グレード</span>' +
