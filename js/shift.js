@@ -155,7 +155,9 @@ var SHIFT = (function () {
   function listChip(n, me) {
     if (!n) return '<span class="lc is-empty">未定</span>';
     if (n === '空き') return '<span class="lc is-solo">1人配信</span>';
-    return '<span class="lc' + (n === me ? ' is-me' : '') + '"' + colorStyle(n) + '>' + u.esc(n) + '</span>';
+    // 🔄9/29 Naoto「目がちかちかする」＝塗りつぶしをやめ、メンバーカラーは薄い地＋左の帯だけ（字は黒系）
+    var c = colorOf(n) || '#9aa0aa';
+    return '<span class="lc' + (n === me ? ' is-me' : '') + '" style="--mc:' + c + '">' + u.esc(n) + '</span>';
   }
   function dayList(rows, me, today) {
     return '<div class="card dl-card">' +
