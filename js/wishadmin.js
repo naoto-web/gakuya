@@ -1,7 +1,8 @@
 /* wishadmin.js — 管理者の「休み希望」タブ（9/29 Naoto「休み希望が入った状態でシフトをいじりたい」）
    ・中身はシートの月シートの休み希望欄（GASが管理者の shift に edit.wish として付けて返す）＝新しく読みに行かない
    ・月はシフトのタブと同じもの（片方で切り替えるともう片方も同じ月）
-   ・上＝人ごとの件数／下＝希望がある日だけ1日1行。行を押すと、その日を選んだ状態でシフトのタブへ
+   ・上＝人ごとの件数／下＝全日1日1行（希望のない日は薄く）。🔄9/29 行を押すと、その日の休み希望を直す板
+     （保存は shiftedit.js の順番待ち・板の下の「この日のシフトを開く」でシフトのタブへ）
    ・「休」「撮影」＝シフトに入れない希望（候補外になる）／それ以外（例：ミッドのみ）＝メモとして灰色
    ・配信者の画面（プレビュー中も）は今までどおり「準備中」 */
 var WISHADMIN = (function () {
@@ -31,7 +32,8 @@ var WISHADMIN = (function () {
     Object.keys(wish).forEach(function (date) {
       Object.keys(wish[date]).forEach(function (n) { if (cnt[n]) cnt[n][kind(wish[date][n])]++; });
     });
-    var dates = Object.keys(wish).sort();
+    // 🔄9/29 アプリから編集できるようにしたので、希望のない日も並べる（薄く）＝どの日にも足せる
+    var dates = (d.rows || []).map(function (r) { return r.date; });
     // その日のシフトに入っているのに「休」「撮影」＝シートでは紫になる違反
     var rowsBy = {};
     (d.rows || []).forEach(function (r) { rowsBy[r.date] = r; });
@@ -41,7 +43,7 @@ var WISHADMIN = (function () {
     var shown = (d.months || []).filter(function (m) { return m.ym >= u.addMonth(curYm, -1); });
     el.innerHTML =
       '<div class="title-row"><h1 class="screen-title">休み希望</h1>' +
-      '<span class="title-aside">' + (S.loading ? '読み込み中…' : '') + ' <button type="button" class="link-btn" id="w-reload">最新にする</button></span></div>' +
+      '<span class="title-aside">' + (window.EDIT && EDIT.pending() ? '<b class="saving">保存中…</b>' : S.loading ? '読み込み中…' : '') + ' <button type="button" class="link-btn" id="w-reload">最新にする</button></span></div>' +
       '<div class="seg seg-sm" role="group" aria-label="月">' + shown.map(function (m) {
         return '<button type="button" data-wym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + '</button>';
       }).join('') + '</div>' +
@@ -53,28 +55,33 @@ var WISHADMIN = (function () {
           (c.note ? '<span class="wa-n"><i class="wk wk-note">他</i>' + c.note + '</span>' : '') + '</div>';
       }).join('') + '</div>' +
       (dates.length ? '<div class="card wa-list">' + dates.map(function (date) {
-        var names = Object.keys(wish[date]).sort(function (a, b) {
+        var names = Object.keys(wish[date] || {}).sort(function (a, b) {
           return members.map(function (m) { return m.name; }).indexOf(a) - members.map(function (m) { return m.name; }).indexOf(b);
         });
-        return '<button type="button" class="wa-row" data-wdate="' + date + '">' +
+        return '<button type="button" class="wa-row' + (names.length ? '' : ' is-blank') + '" data-wdate="' + date + '">' +
           '<span class="wa-date"><b class="num ' + dayClass(date) + '">' + Number(date.slice(8)) + '</b><small class="' + dayClass(date) + '">' + u.DOW[u.dow(date)] + '</small></span>' +
           '<span class="wa-chips">' + names.map(function (n) {
             var w = wish[date][n];
             return '<span class="wa-chip wa-' + kind(w) + (clash(date, n) ? ' is-clash' : '') + '" style="--mc:' + colorOf(n) + '">' +
               u.esc(n) + '<b>' + u.esc(w) + '</b>' + (clash(date, n) ? '<em>入っています</em>' : '') + '</span>';
-          }).join('') + '</span></button>';
-      }).join('') + '</div>' : '<div class="card"><p class="sub">この月の休み希望はまだありません。</p></div>') +
-      '<p class="fresh">行を押すと、その日のシフトを開きます。「休」「撮影」の人はシフトの候補外（理由つきの灰色）になります。</p>';
+          }).join('') + (names.length ? '' : '<span class="wa-none">—</span>') + '</span></button>';
+      }).join('') + '</div>' : '<div class="card"><p class="sub">この月のシートがありません。</p></div>') +
+      '<p class="fresh">行を押すと、その日の休み希望を直せます（押したその場でシートに保存）。「休」「撮影」の人はシフトの候補外になります。</p>';
 
     el.querySelectorAll('[data-wym]').forEach(function (b) { b.addEventListener('click', function () { SHIFT.go(b.dataset.wym); }); });
     el.querySelector('#w-reload').addEventListener('click', function () { SHIFT.reload(); });
     el.querySelectorAll('[data-wdate]').forEach(function (b) {
       b.addEventListener('click', function () {
-        SHIFT.select(b.dataset.wdate);
-        APP.go('shift');
-        // その日の詳細（休み希望の行つき）が見えるところまで送る
-        var dd = document.querySelector('.day-detail');
-        if (dd) dd.scrollIntoView({ block: 'start' });  // 'end' だと下のタブに休み希望の行が隠れる
+        var date = b.dataset.wdate;
+        var toShift = function () {
+          SHIFT.select(date);
+          APP.go('shift');
+          // その日の詳細（休み希望の行つき）が見えるところまで送る
+          var dd = document.querySelector('.day-detail');
+          if (dd) dd.scrollIntoView({ block: 'start' });  // 'end' だと下のタブに休み希望の行が隠れる
+        };
+        // 行を押す＝その日の休み希望を直す板（板の下に「この日のシフトを開く」）。編集の部品が無ければシフトへ
+        if (window.EDIT && EDIT.can()) EDIT.openWish(date, { toShift: toShift }); else toShift();
       });
     });
   }
