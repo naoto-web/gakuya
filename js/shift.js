@@ -150,6 +150,28 @@ var SHIFT = (function () {
     return row(r.day, 'blk-day') + row(r.night, 'blk-night');
   }
 
+  // 全体＝1日1行の縦一覧。左＝日付（土青・日祝赤・グレード札）／昼の2人／夜の2人（メンバーカラーの札）
+  //   行を押すと、その行のすぐ下に詳細（場の札など）が開く＝一覧の下に出すと画面の外になるため
+  function listChip(n, me) {
+    if (!n) return '<span class="lc is-empty">未定</span>';
+    if (n === '空き') return '<span class="lc is-solo">1人配信</span>';
+    return '<span class="lc' + (n === me ? ' is-me' : '') + '"' + colorStyle(n) + '>' + u.esc(n) + '</span>';
+  }
+  function dayList(rows, me, today) {
+    return '<div class="card dl-card">' +
+      '<div class="dl-head"><span></span><span class="lg lg-day">昼</span><span class="lg lg-night">夜</span></div>' +
+      rows.map(function (r) {
+        var open = r.date === st.sel;
+        var dw = u.dow(r.date);
+        return '<button type="button" class="dl-row' + (r.date === today ? ' is-today' : '') + (open ? ' is-open' : '') + '" data-date="' + r.date + '" aria-expanded="' + open + '">' +
+          '<span class="dl-date"><span class="dl-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span><span class="dl-w ' + dayClass(r.date) + '">' + u.DOW[dw] + '</span>' +
+          (r.grade ? gradeBadge(r.grade) : '') + '</span>' +
+          '<span class="dl-slot dl-day">' + listChip(r.day[0], me) + listChip(r.day[1], me) + '</span>' +
+          '<span class="dl-slot dl-night">' + listChip(r.night[0], me) + listChip(r.night[1], me) + '</span>' +
+          '</button>' + (open ? detail(r, me, today) : '');
+      }).join('') + '</div>';
+  }
+
   // 全体モードの見本：メンバーカラーと名前・1人配信・未定
   function allLegend(me) {
     return '<div class="legend all-legend">' + (st.me.members || []).map(function (m) {
@@ -288,15 +310,23 @@ var SHIFT = (function () {
       }).join('') + '</div>' +
       (isAdmin() ? publishBar(d) : '') +
       // 選んだ日の枠＝見ている人（管理者は強調中の人）のメンバーカラー（9/29 Naoto）
-      '<div class="card cal-card"' + (me && colorOf(me) ? ' style="--sel:' + colorOf(me) + '"' : '') + '>' + calendar(rows, me, today, all) +
-      (all ? allLegend(me) : '<div class="legend">' +
+      // 全体＝1日1行の縦一覧（9/29 Naoto「全体のカレンダーは縦一列で1日一行」）／個人＝月カレンダー＋下に詳細
+      (all ? dayList(rows, me, today) :
+      '<div class="card cal-card"' + (me && colorOf(me) ? ' style="--sel:' + colorOf(me) + '"' : '') + '>' + calendar(rows, me, today, false) +
+      '<div class="legend">' +
       (me ? '<span><span class="lg lg-day">昼</span><span class="lg lg-night">夜</span>＝' + (isAdmin() ? 'その人' : '自分') + 'の出番（中は相方）</span>' : '<span><span class="sm aki">未定</span>＝人が入っていない枠</span>') +
       '<span><span class="gb gb-day">昼G</span><span class="gb gb-night">夜G</span>＝グレード</span>' +
       // 出勤数は管理者（強調中）だけ。配信者の画面には出さない（9/29 Naoto「23枠/25って表示は消して」）
       (me ? '<span class="legend-count">' + (isAdmin() ? u.esc(me) + ' ' : '') + '<b class="num">' + count + '</b>日/' + rows.length + '日</span>' : '') +
-      '</div>') + '</div>' +
-      (selRow ? detail(selRow, me, today) : '');
+      '</div></div>' +
+      (selRow ? detail(selRow, me, today) : ''));
     bind(el);
+    // 全体を開いた直後は今日の行が見える位置へ（31行あるので）。同じ月・同じ表示の再描画では動かさない
+    if (all && st.scrolledFor !== d.ym + ':all') {
+      st.scrolledFor = d.ym + ':all';
+      var tr = el.querySelector('.dl-row.is-today');
+      if (tr) setTimeout(function () { tr.scrollIntoView({ block: 'center' }); }, 0);
+    } else if (!all) { st.scrolledFor = null; }
   }
 
   function bind(el) {
@@ -304,6 +334,10 @@ var SHIFT = (function () {
     if (q('#reload')) q('#reload').addEventListener('click', function () { if (!st.loading) load(st.ym); });
     el.querySelectorAll('[data-ym]').forEach(function (b) { b.addEventListener('click', function () { st.sel = null; load(b.dataset.ym); }); });
     el.querySelectorAll('.scal-cell[data-date]').forEach(function (b) { b.addEventListener('click', function () { st.sel = b.dataset.date; render(el); }); });
+    // 全体の一覧：行を押すとその下に詳細を開く・同じ行をもう一度押すと閉じる
+    el.querySelectorAll('.dl-row[data-date]').forEach(function (b) {
+      b.addEventListener('click', function () { st.sel = st.sel === b.dataset.date ? null : b.dataset.date; render(el); });
+    });
     el.querySelectorAll('[data-mode]').forEach(function (b) {
       b.addEventListener('click', function () {
         st.mode = b.dataset.mode;
