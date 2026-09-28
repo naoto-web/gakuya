@@ -469,3 +469,15 @@ body { margin: 0; }
 /* 上部のロゴ（2026-09-29 アプリ名を「俺たちの競輪ライブ」に） */
 h1.brand { margin: 0; line-height: 0; }
 .brand img { height: 48px; width: auto; display: block; }
+/* 管理者の「配信者として見る」（9/29） */
+.viewas { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; }
+.viewas-cap { color: var(--fg-dim); font-weight: 700; }
+.viewas select { padding: 4px 8px; font-size: 14px; font-weight: 700; }
+.viewas.is-preview {
+  background: var(--gold-soft);
+  border: 1px solid var(--btn-line);
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+.viewas.is-preview .viewas-cap { color: var(--gold); }
+.viewas .btn-sm { margin-left: auto; }
