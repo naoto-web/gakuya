@@ -25,19 +25,58 @@ var SHIFT = (function () {
     }).then(function () { st.loading = false; SHIFT.render(); });
   }
 
+  // メンバーカラー（GASが名前と一緒に返す。コードには対応表を書かない）
+  function colorOf(name) {
+    var m = (st.me.members || []).filter(function (x) { return x.name === name; })[0];
+    return m && m.color ? m.color : null;
+  }
+  // 塗りの上の字の色：明るい色（黄など）は黒字、それ以外は白字
+  function inkOn(hex) {
+    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? '#23252a' : '#ffffff';
+  }
+  function colorStyle(name) {
+    var c = colorOf(name);
+    return c ? ' style="background:' + c + ';color:' + inkOn(c) + '"' : '';
+  }
+
   function chip(name, me, locked) {
     if (!name) return '<span class="name is-empty">未定</span>';
     if (name === '空き') return '<span class="name is-aki">空き</span>';
-    return '<span class="name' + (name === me ? ' is-me' : '') + '">' + (locked ? '<span class="lock" aria-label="確定">🔒</span>' : '') + u.esc(name) + '</span>';
+    return '<span class="name mc' + (name === me ? ' is-me' : '') + '"' + colorStyle(name) + '>' + (locked ? '<span class="lock" aria-label="確定">🔒</span>' : '') + u.esc(name) + '</span>';
   }
 
-  function cellMarks(r, me) {
+  // その日の自分の枠（昼／夜）。通しはシートの違反なので出ない前提だが、あれば昼を優先
+  function mySlot(r, me) {
+    if (!me) return null;
+    if (r.day.indexOf(me) >= 0) return '昼';
+    if (r.night.indexOf(me) >= 0) return '夜';
+    return null;
+  }
+  // 相方（同じ枠のもう1人）。空欄＝未定、「空き」＝1人配信
+  function partnerOf(r, me, slot) {
+    var pair = slot === '昼' ? r.day : r.night;
+    var other = pair.filter(function (x, i) { return !(x === me && pair.indexOf(me) === i); })[0];
+    if (other === undefined || other === '') return { label: '未定', cls: 'is-empty' };
+    if (other === '空き') return { label: '1人', cls: 'is-solo' };
+    return { label: other, name: other };
+  }
+
+  // マスの下半分。自分の出勤日＝相方の名前（メンバーカラー）／管理者で強調なし＝未定の数
+  function cellBody(r, me, slot) {
     if (me) {
-      return '<span class="sm day ' + (r.day.indexOf(me) >= 0 ? 'on' : '') + '">昼</span>' +
-             '<span class="sm night ' + (r.night.indexOf(me) >= 0 ? 'on' : '') + '">夜</span>';
+      if (!slot) return '';
+      var p = partnerOf(r, me, slot);
+      return '<span class="pc ' + (p.cls || '') + '"' + (p.name ? colorStyle(p.name) : '') + '>' + u.esc(p.label) + '</span>';
     }
     var open = r.day.concat(r.night).filter(function (x) { return x === ''; }).length;
     return open ? '<span class="sm aki">未定' + open + '</span>' : '';
+  }
+
+  // グレードの札：昼開催＝「昼G」（金地）／夜開催＝「夜G」（紺地に金字）（9/29 Naoto「夜グレードと昼グレードが分かりづらい」）
+  function gradeBadge(g) {
+    if (!g) return '';
+    return '<span class="gb ' + (g.slot === '夜' ? 'gb-night' : 'gb-day') + '">' + g.slot + 'G</span>';
   }
 
   // 🔑月曜始まり（9/29 Naoto）。u.dow は日曜=0 なので (曜日+6)%7 で月曜=0 に直す
@@ -48,22 +87,21 @@ var SHIFT = (function () {
     for (var i = 0; i < first; i++) h += '<span class="scal-cell is-blank"></span>';
     rows.forEach(function (r) {
       var dw = u.dow(r.date);
-      var mine = me && (r.day.indexOf(me) >= 0 || r.night.indexOf(me) >= 0);
-      var cls = ['scal-cell', r.grade ? 'is-grade' : '', r.date === today ? 'is-today' : '', r.date === st.sel ? 'is-sel' : '', mine ? 'is-mine' : ''].join(' ');
-      h += '<button type="button" class="' + cls + '" data-date="' + r.date + '" aria-pressed="' + (r.date === st.sel) + '" aria-label="' + u.md(r.date) + (r.grade ? '・' + u.esc(r.grade.name) : '') + '">' +
-        '<span class="scal-d num ' + (dw === 0 ? 'sun' : dw === 6 ? 'sat' : '') + '">' + Number(r.date.slice(8)) + '</span>' +
-        // 下の行＝左端にグレードの「G」（9/29 Naoto「日付の四角の左下」）＋右側に昼・夜の札。
-        //   Gの場所はGが無い日も空けておく＝札の位置が日によって動かない
-        '<span class="scal-marks"><span class="scal-g">' + (r.grade ? 'G' : '') + '</span><span class="scal-chips">' + cellMarks(r, me) + '</span></span></button>';
+      var slot = mySlot(r, me);
+      // 自分の出勤日はマスごと塗る：昼＝薄い黄／夜＝紺（9/29 Naoto）
+      var cls = ['scal-cell', slot === '昼' ? 'is-mine-day' : slot === '夜' ? 'is-mine-night' : '',
+        r.date === today ? 'is-today' : '', r.date === st.sel ? 'is-sel' : ''].join(' ');
+      h += '<button type="button" class="' + cls + '" data-date="' + r.date + '" aria-pressed="' + (r.date === st.sel) + '" aria-label="' + u.md(r.date) + (slot ? '・' + slot + 'の出番' : '') + (r.grade ? '・' + u.esc(r.grade.name) : '') + '">' +
+        '<span class="scal-top"><span class="scal-d num ' + (dw === 0 ? 'sun' : dw === 6 ? 'sat' : '') + '">' + Number(r.date.slice(8)) + '</span>' + gradeBadge(r.grade) + '</span>' +
+        '<span class="scal-body">' + cellBody(r, me, slot) + '</span></button>';
     });
     return '<div class="cal-head mon">' + HEAD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="scal">' + h + '</div>';
   }
-
   function detail(r, me, today) {
     var lk = r.locked || [false, false, false, false];
     return '<div class="card day-detail">' +
       '<div class="row" style="justify-content:space-between"><strong class="day-detail-date">' + u.md(r.date) + (r.date === today ? ' 今日' : '') + '</strong>' +
-      (r.grade ? '<span class="pill grade">' + u.esc(r.grade.name) + '（' + r.grade.slot + '）</span>' : '') + '</div>' +
+      (r.grade ? '<span class="grade-line">' + gradeBadge(r.grade) + u.esc(r.grade.name) + '</span>' : '') + '</div>' +
       '<div class="slot-row"><span class="pill day">昼</span>' + chip(r.day[0], me, lk[0]) + chip(r.day[1], me, lk[1]) + '</div>' +
       '<div class="slot-row"><span class="pill night">夜</span>' + chip(r.night[0], me, lk[2]) + chip(r.night[1], me, lk[3]) + '</div>' +
       (isAdmin() && r.memo ? '<p class="memo">メモ：' + u.esc(r.memo) + '</p>' : '') +
@@ -126,8 +164,8 @@ var SHIFT = (function () {
       (isAdmin() ? publishBar(d) : '') +
       '<div class="card cal-card">' + calendar(rows, me, today) +
       '<div class="legend">' +
-      (me ? '<span><span class="sm day on">昼</span><span class="sm night on">夜</span>＝' + (isAdmin() ? 'その人' : '自分') + 'の出番</span>' : '<span><span class="sm aki">未定</span>＝人が入っていない枠</span>') +
-      '<span><span class="grade-tag">G</span>＝グレード</span>' +
+      (me ? '<span><span class="lg lg-day">昼</span><span class="lg lg-night">夜</span>＝' + (isAdmin() ? 'その人' : '自分') + 'の出番（中は相方）</span>' : '<span><span class="sm aki">未定</span>＝人が入っていない枠</span>') +
+      '<span><span class="gb gb-day">昼G</span><span class="gb gb-night">夜G</span>＝グレード</span>' +
       (me ? '<span class="legend-count">' + (isAdmin() ? u.esc(me) + ' ' : '') + '<b class="num">' + count + '</b>枠' + (lim ? '/' + lim : '') + '</span>' : '') +
       '</div></div>' +
       (selRow ? detail(selRow, me, today) : '');
