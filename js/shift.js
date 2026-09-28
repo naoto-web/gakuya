@@ -5,6 +5,9 @@
    ・シートの空欄＝「未定」、シートに「空き」＝その枠は人を入れない（1人配信など） */
 var SHIFT = (function () {
   var u = window.OKL.u;
+  // 🔑編集の部品（shiftedit.js）が無くても見るだけで動く＝index.html は10分キャッシュなので、
+  //   古い index.html（shiftedit.js を読まない）＋新しい shift.js の組み合わせが最大10分ありうる
+  var EDIT = window.EDIT || { attach: function () {}, can: function () { return false; }, pending: function () { return 0; } };
   var st = { me: null, data: null, ym: null, sel: null, focus: '', loading: false, err: '', confirm: false, fetchedAt: null, mode: 'me' };
   // 個人／全体は端末に覚える（開き直しても前の表示で出る）
   try { if (localStorage.getItem('gakuya:mode') === 'all') st.mode = 'all'; } catch (e) { /* 覚えられなくても動く */ }
@@ -65,7 +68,8 @@ var SHIFT = (function () {
     return API.shift(ym).then(function (d) {
       var at = new Date();
       saveCache(d, at);
-      if (!st.want || st.want === d.ym) apply(d, at);  // 待っている間に別の月へ移っていたら上書きしない
+      // 待っている間に別の月へ移っていたら上書きしない／編集の保存待ちがある間も上書きしない（先に押した分が戻って見えるため）
+      if ((!st.want || st.want === d.ym) && !EDIT.pending()) apply(d, at);
       prefetch(d);
     }).catch(function (e) {
       if (!st.data || (st.want && st.ym !== st.want)) {
@@ -89,10 +93,14 @@ var SHIFT = (function () {
     return c ? ' style="background:' + c + ';color:' + inkOn(c) + '"' : '';
   }
 
-  function chip(name, me, locked) {
-    if (!name) return '<span class="name is-empty">未定</span>';
-    if (name === '空き') return '<span class="name is-solo">1人配信</span>';  // 「空き」＝その枠は1人配信（9/29 Naoto「もっと一人配信って分かるように」）
-    return '<span class="name mc' + (name === me ? ' is-me' : '') + '"' + colorStyle(name) + '>' + (locked ? '<span class="lock" aria-label="確定">🔒</span>' : '') + u.esc(name) + '</span>';
+  // edit＝{ date, slot }：管理者の編集中は押せる札（button）にする。見た目は同じ
+  function chip(name, me, locked, edit) {
+    var tag = edit ? 'button type="button" data-edit-date="' + edit.date + '" data-edit-slot="' + edit.slot + '"' : 'span';
+    var end = edit ? '</button>' : '</span>';
+    var ed = edit ? ' is-edit' : '';
+    if (!name) return '<' + tag + ' class="name is-empty' + ed + '">未定' + end;
+    if (name === '空き') return '<' + tag + ' class="name is-solo' + ed + '">' + (locked ? '🔒' : '') + '1人配信' + end;  // 「空き」＝その枠は1人配信（9/29 Naoto「もっと一人配信って分かるように」）
+    return '<' + tag + ' class="name mc' + (name === me ? ' is-me' : '') + ed + '"' + colorStyle(name) + '>' + (locked ? '<span class="lock" aria-label="確定">🔒</span>' : '') + u.esc(name) + end;
   }
 
   // その日の自分の枠（昼／夜）。通しはシートの違反なので出ない前提だが、あれば昼を優先
@@ -236,6 +244,10 @@ var SHIFT = (function () {
   }
   function detail(r, me, today) {
     var lk = r.locked || [false, false, false, false];
+    var ed = EDIT.can();
+    var e = function (s) { return ed ? { date: r.date, slot: s } : null; };
+    var vals = r.day.concat(r.night);
+    var allLocked = vals.every(function (v, i) { return v === '' || lk[i]; }) && vals.some(function (v) { return v !== ''; });
     return '<div class="card day-detail">' +
       // 日付の色はカレンダーと同じ（土＝青・日祝＝赤）。祝日は名前も添える
       '<div class="row" style="justify-content:space-between"><strong class="day-detail-date"><span class="' + dayClass(r.date) + '">' + u.md(r.date) + '</span>' +
@@ -243,12 +255,15 @@ var SHIFT = (function () {
       // 右上のグレード表示は消した（下の場の札と情報が重なる・9/29 Naoto）
       '</div>' +
       // 昼・夜の札はカレンダーの凡例と同じ「中が薄い」札（9/29 Naoto）
-      '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0]) + chip(r.day[1], me, lk[1]) + '</div>' +
+      '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0], e(0)) + chip(r.day[1], me, lk[1], e(1)) + '</div>' +
       venues(r.date, '昼') +
       '<hr class="slot-sep">' +  // 昼と夜の区切り（9/29 Naoto）
-      '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2]) + chip(r.night[1], me, lk[3]) + '</div>' +
+      '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2], e(2)) + chip(r.night[1], me, lk[3], e(3)) + '</div>' +
       venues(r.date, '夜') +
-      (isAdmin() && r.memo ? '<p class="memo">メモ：' + u.esc(r.memo) + '</p>' : '') +
+      // 管理者の編集：メモと、その日の4枠をまとめて確定／解除（枠ごとの変更は名前の札を押す）
+      (ed ? '<div class="edit-row"><button type="button" class="memo memo-btn" data-edit-memo="' + r.date + '">メモ：' + (r.memo ? u.esc(r.memo) : '<span class="faint">なし</span>') + ' ✎</button>' +
+        '<button type="button" class="btn ghost btn-xs" data-lock-day="' + r.date + '" data-on="' + (allLocked ? '0' : '1') + '">' + (allLocked ? '確定を外す' : '🔒この日を確定') + '</button></div>'
+        : (isAdmin() && r.memo ? '<p class="memo">メモ：' + u.esc(r.memo) + '</p>' : '')) +
       '</div>';
   }
 
@@ -265,6 +280,7 @@ var SHIFT = (function () {
     return '<div class="admin-bar">' +
       (d.published ? '<span class="pill ok">公開中</span>' : '<span class="pill dim">非公開</span>') +
       '<button type="button" class="btn ' + (d.published ? 'ghost' : '') + ' btn-sm" id="pub-ask">' + (d.published ? '非公開に戻す' : '配信者に公開') + '</button>' +
+      (EDIT.can() ? '<button type="button" class="btn ghost btn-sm" id="bulk-menu" aria-label="月まとめての操作（自動入力・並び替え・リセット）">一括▾</button>' : '') +
       '<select id="focus" class="date-input focus-sel" aria-label="強調する人"><option value="">強調：なし</option>' +
       st.me.members.map(function (m) { return '<option value="' + u.esc(m.name) + '"' + (m.name === st.focus ? ' selected' : '') + '>強調：' + u.esc(m.name) + '</option>'; }).join('') +
       '</select></div>';
@@ -307,7 +323,7 @@ var SHIFT = (function () {
       '<span class="seg seg-mode" role="group" aria-label="表示">' +
       '<button type="button" data-mode="me" aria-pressed="' + !all + '">個人</button>' +
       '<button type="button" data-mode="all" aria-pressed="' + all + '">全体</button></span>' +
-      '<span class="title-aside">' + (st.loading ? '読み込み中…' : at) + ' <button type="button" class="link-btn" id="reload">最新にする</button></span></div>' +
+      '<span class="title-aside">' + (EDIT.pending() ? '<b class="saving">保存中…</b>' : st.loading ? '読み込み中…' : at) + ' <button type="button" class="link-btn" id="reload">最新にする</button></span></div>' +
       '<div class="seg seg-sm" role="group" aria-label="月">' + shown.map(function (m) {
         return '<button type="button" data-ym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + (isAdmin() && !m.published ? '<small class="seg-note">非公開</small>' : '') + '</button>';
       }).join('') + '</div>' +
@@ -346,6 +362,13 @@ var SHIFT = (function () {
     });
     // レースの札：今は案内だけ。出走表ができたらここで data-venue・data-date を使って飛ぶ
     el.querySelectorAll('.rb').forEach(function (b) { b.addEventListener('click', function () { APP.toast(b.dataset.venue + 'の出走表は準備中です'); }); });
+    // 管理者の編集（shiftedit.js）
+    el.querySelectorAll('[data-edit-slot]').forEach(function (b) {
+      b.addEventListener('click', function () { EDIT.openSlot(b.dataset.editDate, +b.dataset.editSlot); });
+    });
+    el.querySelectorAll('[data-edit-memo]').forEach(function (b) { b.addEventListener('click', function () { EDIT.openMemo(b.dataset.editMemo); }); });
+    el.querySelectorAll('[data-lock-day]').forEach(function (b) { b.addEventListener('click', function () { EDIT.lockDay(b.dataset.lockDay, b.dataset.on === '1'); }); });
+    if (q('#bulk-menu')) q('#bulk-menu').addEventListener('click', function () { EDIT.openMenu(); });
     if (q('#focus')) q('#focus').addEventListener('change', function () { st.focus = q('#focus').value; render(el); });
     if (q('#pub-ask')) q('#pub-ask').addEventListener('click', function () { st.confirm = true; render(el); });
     if (q('#pub-no')) q('#pub-no').addEventListener('click', function () { st.confirm = false; render(el); });
@@ -363,6 +386,18 @@ var SHIFT = (function () {
       });
     });
   }
+
+  // 編集（shiftedit.js）に渡す手すり。保存が返ってきたら同じ月を見ているときだけ差し替える
+  EDIT.attach({
+    data: function () { return st.data; },
+    isAdmin: isAdmin,
+    members: function () { return st.me.members || []; },
+    limitOf: limitOf,
+    render: function () { SHIFT.render(); },
+    reload: function () { load(st.ym); },
+    saveCache: function (d) { saveCache(d, new Date()); },
+    applyServer: function (d) { if (d && d.ym === st.ym) apply(d, new Date()); }
+  });
 
   return {
     init: function (me) { st.me = me; return load(null); },
