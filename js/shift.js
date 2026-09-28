@@ -88,19 +88,32 @@ var SHIFT = (function () {
   }
   // 塗りの上の字の色：明るい色（黄など）は黒字、それ以外は白字
   function inkOn(hex) { return u.inkOn(hex); }
+  // 半休の人の札＝出られる側だけメンバーカラー・出られない側は薄く（9/29 Naoto「相方から見たときに名前バッジも右半分だけ色塗る（左半分は薄く）」）
+  //   昼の枠＝左モーニング｜右デイ／夜の枠＝左ナイター｜右ミッド。中身はGASの half（その日に入っている人の半休のNG区分だけ）
+  //   塗りが半分になると白字が薄い側で読めない＝字は黒系に
+  function paintStyle(name, date, slot) {
+    var ng = name && st.data && st.data.half && st.data.half[date] && st.data.half[date][name];
+    var c = colorOf(name);
+    if (!ng || !c) return colorStyle(name);
+    var qs = slot === '昼' ? [0, 1] : [2, 3];
+    var ngL = ng.indexOf(qs[0]) >= 0, ngR = ng.indexOf(qs[1]) >= 0;
+    if (!ngL && !ngR) return colorStyle(name);
+    var faint = 'color-mix(in srgb, ' + c + ' 22%, #ffffff)';
+    return ' style="background:linear-gradient(90deg,' + (ngL ? faint : c) + ' 0 50%,' + (ngR ? faint : c) + ' 50% 100%);color:#23252a"';
+  }
   function colorStyle(name) {
     var c = colorOf(name);
     return c ? ' style="background:' + c + ';color:' + inkOn(c) + '"' : '';
   }
 
   // edit＝{ date, slot }：管理者の編集中は押せる札（button）にする。見た目は同じ
-  function chip(name, me, locked, edit) {
+  function chip(name, me, locked, edit, paint) {
     var tag = edit ? 'button type="button" data-edit-date="' + edit.date + '" data-edit-slot="' + edit.slot + '"' : 'span';
     var end = edit ? '</button>' : '</span>';
     var ed = edit ? ' is-edit' : '';
     if (!name) return '<' + tag + ' class="name is-empty' + ed + '">未定' + end;
     if (name === '空き') return '<' + tag + ' class="name is-solo' + ed + '">' + (locked ? '🔒' : '') + '1人配信' + end;  // 「空き」＝その枠は1人配信（9/29 Naoto「もっと一人配信って分かるように」）
-    return '<' + tag + ' class="name mc' + (name === me ? ' is-me' : '') + ed + '"' + colorStyle(name) + '>' + (locked ? '<span class="lock" aria-label="確定">🔒</span>' : '') + u.esc(name) + end;
+    return '<' + tag + ' class="name mc' + (name === me ? ' is-me' : '') + ed + '"' + (paint || colorStyle(name)) + '>' + (locked ? '<span class="lock" aria-label="確定">🔒</span>' : '') + u.esc(name) + end;
   }
 
   // その日の自分の枠（昼／夜）。通しはシートの違反なので出ない前提だが、あれば昼を優先
@@ -124,7 +137,7 @@ var SHIFT = (function () {
     if (me) {
       if (!slot) return '';
       var p = partnerOf(r, me, slot);
-      return '<span class="pc ' + (p.cls || '') + '"' + (p.name ? colorStyle(p.name) : '') + '>' + u.esc(p.label) + '</span>';
+      return '<span class="pc ' + (p.cls || '') + '"' + (p.name ? paintStyle(p.name, r.date, slot) : '') + '>' + u.esc(p.label) + '</span>';
     }
     var open = r.day.concat(r.night).filter(function (x) { return x === ''; }).length;
     return open ? '<span class="sm aki">未定' + open + '</span>' : '';
@@ -277,10 +290,10 @@ var SHIFT = (function () {
       // 右上のグレード表示は消した（下の場の札と情報が重なる・9/29 Naoto）
       '</div>' +
       // 昼・夜の札はカレンダーの凡例と同じ「中が薄い」札（9/29 Naoto）
-      '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0], e(0)) + chip(r.day[1], me, lk[1], e(1)) + '</div>' +
+      '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0], e(0), paintStyle(r.day[0], r.date, '昼')) + chip(r.day[1], me, lk[1], e(1), paintStyle(r.day[1], r.date, '昼')) + '</div>' +
       venues(r.date, '昼') +
       '<hr class="slot-sep">' +  // 昼と夜の区切り（9/29 Naoto）
-      '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2], e(2)) + chip(r.night[1], me, lk[3], e(3)) + '</div>' +
+      '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2], e(2), paintStyle(r.night[0], r.date, '夜')) + chip(r.night[1], me, lk[3], e(3), paintStyle(r.night[1], r.date, '夜')) + '</div>' +
       venues(r.date, '夜') +
       // 管理者の編集：メモと、その日の4枠をまとめて確定／解除（枠ごとの変更は名前の札を押す）
       (ed ? '<div class="edit-row"><button type="button" class="memo memo-btn" data-edit-memo="' + r.date + '">メモ：' + (r.memo ? u.esc(r.memo) : '<span class="faint">なし</span>') + ' ✎</button>' +
