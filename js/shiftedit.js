@@ -227,7 +227,7 @@ var EDIT = (function () {
           var b = function (key, label) {
             return '<button type="button" data-wk="' + key + '" data-wn="' + u.esc(m.name) + '" aria-pressed="' + (k === key || (key === 'half' && editing === m.name)) + '" class="wk-btn wk-b-' + key + '">' + label + '</button>';
           };
-          // 札は「半」だけ。中身（例：ミッドのみ出勤）は行の下に出す（札に書くと切れる）
+          // 札は「半」だけ。中身（例：ミッドのみ可）は行の下に出す（札に書くと切れる）
           var halfLabel = '半';
           return '<div class="we-row"><span class="wa-who" style="--mc:' + (m.color || '#9aa0aa') + '">' + u.esc(m.name) + '</span>' +
             '<span class="seg we-seg">' + b('none', 'なし') + b('off', '休') + b('half', halfLabel) + b('shoot', '撮影') + '</span>' +
