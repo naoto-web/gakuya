@@ -173,23 +173,39 @@ var SHIFT = (function () {
 
   // 全体＝1日1行の縦一覧。左＝日付（土青・日祝赤・グレード札）／昼の2人／夜の2人（メンバーカラーの札）
   //   行を押すと、その行のすぐ下に詳細（場の札など）が開く＝一覧の下に出すと画面の外になるため
-  function listChip(n, me, date, slot) {
-    if (!n) return '<span class="lc is-empty">未定</span>';
-    if (n === '空き') return '<span class="lc is-solo">1人配信</span>';
+  // k＝枠の番号（0〜3）を渡すと編集モードの札（押すとその枠を直す板）になる＝見た目は同じ（9/29 Naoto「全体に編集モード」）
+  function listChip(n, me, date, slot, k) {
+    var ed = k != null;
+    var open = ed ? '<button type="button" data-edit-date="' + date + '" data-edit-slot="' + k + '" class="lc is-edit' : '<span class="lc';
+    var close = ed ? '</button>' : '</span>';
+    if (!n) return open + ' is-empty">未定' + close;
+    if (n === '空き') return open + ' is-solo">1人配信' + close;
     // 🔄9/29 Naoto「目がちかちかする」＝塗りつぶしをやめ、メンバーカラーは薄い地＋左の帯だけ（字は黒系）
     //   🔄同日「左の帯いらない・名前の枠は付けて・自分以外は薄塗り」＝全員に色の枠／自分だけ塗りつぶし（字は白か黒）
     var c = colorOf(n) || '#9aa0aa';
     // 半休＝出られる側だけ塗る（9/29 Naoto「全体の一覧も同様に」）。自分＝塗りつぶし｜22%／他の人＝15%｜白地に斜線
     var ng = st.data && st.data.half && st.data.half[date] && st.data.half[date][n];
     var hb = u.slotHalfBg(ng, slot, n === me ? c : 'color-mix(in srgb, ' + c + ' 15%, #ffffff)', n === me ? 'color-mix(in srgb, ' + c + ' 22%, #ffffff)' : '');
-    return '<span class="lc' + (n === me ? ' is-me' : '') + '" style="--mc:' + c + ';--ink:' + inkOn(c) + (hb ? ';background:' + hb + ';color:#23252a' : '') + '">' + u.esc(n) + '</span>';
+    return open + (n === me ? ' is-me' : '') + '" style="--mc:' + c + ';--ink:' + inkOn(c) + (hb ? ';background:' + hb + ';color:#23252a' : '') + '">' + u.esc(n) + close;
   }
   function dayList(rows, me, today) {
     return '<div class="card dl-card"' + (me && colorOf(me) ? ' style="--sel:' + colorOf(me) + '"' : '') + '>' +
-      '<div class="dl-head"><span></span><span class="lg lg-day">昼</span><span class="lg lg-night">夜</span></div>' +
+      // 管理者だけ：左上に［✎編集］。編集中は名前の札を押すとその枠を直す板・日付を押すと詳細（9/29 Naoto）
+      '<div class="dl-head">' + (EDIT.can() ? '<button type="button" class="btn ghost btn-xs dl-edit" id="all-edit" aria-pressed="' + !!st.editAll + '">' + (st.editAll ? '✓編集中' : '✎編集') + '</button>' : '<span></span>') +
+      '<span class="lg lg-day">昼</span><span class="lg lg-night">夜</span></div>' +
       rows.map(function (r) {
         var open = r.date === st.selAll;  // 全体で開いた行は個人のカレンダーの選択とは別（開いたときは全部閉じた状態・9/29 Naoto）
         var dw = u.dow(r.date);
+        var ed = st.editAll && EDIT.can();
+        var K = function (k) { return ed ? k : null; };
+        if (ed) {  // 編集中：行全体はボタンにしない（中の札がボタン）。日付だけが詳細の開閉
+          return '<div class="dl-row is-editing' + (r.date === today ? ' is-today' : '') + (open ? ' is-open' : '') + '">' +
+            '<button type="button" class="dl-date dl-open" data-open-date="' + r.date + '" aria-expanded="' + open + '"><span class="dl-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span><span class="dl-w ' + dayClass(r.date) + '">' + u.DOW[dw] + '</span>' +
+            (r.grade ? gradeBadge(r.grade) : '') + '</button>' +
+            '<span class="dl-slot dl-day">' + listChip(r.day[0], me, r.date, '昼', K(0)) + listChip(r.day[1], me, r.date, '昼', K(1)) + '</span>' +
+            '<span class="dl-slot dl-night">' + listChip(r.night[0], me, r.date, '夜', K(2)) + listChip(r.night[1], me, r.date, '夜', K(3)) + '</span>' +
+            '</div>' + (open ? detail(r, me, today) : '');
+        }
         return '<button type="button" class="dl-row' + (r.date === today ? ' is-today' : '') + (open ? ' is-open' : '') + '" data-date="' + r.date + '" aria-expanded="' + open + '">' +
           '<span class="dl-date"><span class="dl-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span><span class="dl-w ' + dayClass(r.date) + '">' + u.DOW[dw] + '</span>' +
           (r.grade ? gradeBadge(r.grade) : '') + '</span>' +
@@ -401,6 +417,10 @@ var SHIFT = (function () {
     el.querySelectorAll('[data-ym]').forEach(function (b) { b.addEventListener('click', function () { st.sel = null; st.selAll = null; load(b.dataset.ym); }); });
     el.querySelectorAll('.scal-cell[data-date]').forEach(function (b) { b.addEventListener('click', function () { st.sel = b.dataset.date; render(el); }); });
     // 全体の一覧：行を押すとその下に詳細を開く・同じ行をもう一度押すと閉じる
+    if (q('#all-edit')) q('#all-edit').addEventListener('click', function () { st.editAll = !st.editAll; render(el); });
+    el.querySelectorAll('[data-open-date]').forEach(function (b) {
+      b.addEventListener('click', function () { st.selAll = st.selAll === b.dataset.openDate ? null : b.dataset.openDate; render(el); });
+    });
     el.querySelectorAll('.dl-row[data-date]').forEach(function (b) {
       b.addEventListener('click', function () { st.selAll = st.selAll === b.dataset.date ? null : b.dataset.date; render(el); });
     });
