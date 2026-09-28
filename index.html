@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#e9e7e1">
+<meta name="robots" content="noindex, nofollow">
+<title>楽屋</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<!-- 🔴このリポジトリは公開。人名・鍵・売上をコードに書かない（名前はGASから受け取る） -->
+<div class="app">
+  <header class="top">
+    <div class="top-row">
+      <div class="brand">OKL<span>楽屋</span></div>
+      <div class="who-now" id="who-now"></div>
+    </div>
+  </header>
+
+  <main id="view" class="view">
+    <p class="sub">読み込んでいます…</p>
+  </main>
+
+  <nav id="tabs" class="tabs" aria-label="画面の切り替え"></nav>
+</div>
+
+<!-- 鍵の入力（ホーム画面アプリは ?k= が落ちるため。選手DBの keygate と同じ考え方） -->
+<div id="keygate" class="keygate" hidden>
+  <div class="card">
+    <h1 class="screen-title">はじめに</h1>
+    <p class="sub">管理者から届いたリンクを、はじめから終わりまで全部貼ってください。</p>
+    <label class="field-cap" for="kg-inp">届いたリンク</label>
+    <input type="text" id="kg-inp" class="date-input kg-inp" placeholder="https://…?k=…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p id="kg-err" class="kg-err" hidden></p>
+    <button type="button" class="btn" id="kg-go">はじめる</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/util.js"></script>
+<script src="js/api.js"></script>
+<script src="js/keygate.js"></script>
+<script src="js/shift.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
