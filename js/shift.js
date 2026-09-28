@@ -76,23 +76,26 @@ var SHIFT = (function () {
         '<p class="sub">' + (d.published ? '配信者の画面からこの月が消えます。' : '配信者全員の画面に、この月のシフトがそのまま表示されます。公開したあとにシート側で直した分も、次に開いたときに反映されます。') + '</p>' +
         '<div class="btn-row"><button type="button" class="btn ghost" id="pub-no">やめる</button><button type="button" class="btn" id="pub-yes">' + (d.published ? '非公開に戻す' : '公開する') + '</button></div></div>';
     }
-    return '<div class="card pub-bar ' + (d.published ? 'is-on' : '') + '">' +
-      '<div class="row" style="justify-content:space-between">' +
-      '<span>' + (d.published ? '<span class="pill ok">配信者に公開中</span> <span class="sub">' + u.stamp(d.publishedAt) + '〜</span>' : '<span class="pill dim">非公開（作成中）</span> <span class="sub">配信者には見えていません</span>') + '</span>' +
-      '<button type="button" class="btn ' + (d.published ? 'ghost' : '') + ' btn-sm" id="pub-ask">' + (d.published ? '非公開に戻す' : '公開する') + '</button></div></div>';
+    // 🔑1行に収める（公開の状態＋ボタン＋強調する人）＝1画面に収めるため（9/29 Naoto「スクロール無しで全部表示」）
+    return '<div class="admin-bar">' +
+      (d.published ? '<span class="pill ok">公開中</span>' : '<span class="pill dim">非公開</span>') +
+      '<button type="button" class="btn ' + (d.published ? 'ghost' : '') + ' btn-sm" id="pub-ask">' + (d.published ? '非公開に戻す' : '配信者に公開') + '</button>' +
+      '<select id="focus" class="date-input focus-sel" aria-label="強調する人"><option value="">強調：なし</option>' +
+      st.me.members.map(function (m) { return '<option value="' + u.esc(m.name) + '"' + (m.name === st.focus ? ' selected' : '') + '>強調：' + u.esc(m.name) + '</option>'; }).join('') +
+      '</select></div>';
   }
 
   function render(el) {
     el = el || document.getElementById('view');
     var d = st.data;
     if (!d) {
-      el.innerHTML = '<h1 class="screen-title">シフト</h1>' + (st.err ? '<div class="card"><p>' + u.esc(st.err) + '</p><button type="button" class="btn" id="reload">最新にする</button></div>' : '<p class="sub">読み込んでいます…</p>');
+      el.innerHTML = '<div class="title-row"><h1 class="screen-title">シフト</h1></div>' + (st.err ? '<div class="card"><p>' + u.esc(st.err) + '</p><button type="button" class="btn" id="reload">最新にする</button></div>' : '<p class="sub">読み込んでいます…</p>');
       bind(el);
       return;
     }
     var months = d.months || [];
     if (!months.length || !d.rows || !d.rows.length) {
-      el.innerHTML = '<h1 class="screen-title">シフト</h1><div class="card"><p>まだ公開されたシフトはありません。</p><p class="sub">管理者が公開すると、ここに表示されます。</p><button type="button" class="btn ghost" id="reload">最新にする</button></div>';
+      el.innerHTML = '<div class="title-row"><h1 class="screen-title">シフト</h1></div><div class="card"><p>まだ公開されたシフトはありません。</p><p class="sub">管理者が公開すると、ここに表示されます。</p><button type="button" class="btn ghost" id="reload">最新にする</button></div>';
       bind(el);
       return;
     }
@@ -108,24 +111,23 @@ var SHIFT = (function () {
     var shown = months.filter(function (m) { return m.ym >= u.addMonth(curYm, -1); });
     if (!shown.some(function (m) { return m.ym === d.ym; })) shown.push(months.filter(function (m) { return m.ym === d.ym; })[0]);
 
+    // 🔑1画面に収める並び（9/29 Naoto）：見出し行 → 月 → （管理者だけ1行） → カレンダー（凡例と出勤数は枠の中の1行） → その日の詳細
+    //   「シフト」の見出しの位置は管理者・配信者で同じ（管理者の追加分は月の切り替えより下にだけ入る）
+    var at = st.fetchedAt ? u.pad(st.fetchedAt.getHours()) + ':' + u.pad(st.fetchedAt.getMinutes()) + '時点' : '';
     el.innerHTML =
-      '<div class="row" style="justify-content:space-between"><h1 class="screen-title">シフト</h1>' +
-      '<button type="button" class="link-btn" id="reload">' + (st.loading ? '読み込み中…' : '最新にする') + '</button></div>' +
-      '<div class="seg" role="group" aria-label="月">' + shown.map(function (m) {
+      '<div class="title-row"><h1 class="screen-title">シフト</h1>' +
+      '<span class="title-aside">' + (st.loading ? '読み込み中…' : at) + ' <button type="button" class="link-btn" id="reload">最新にする</button></span></div>' +
+      '<div class="seg seg-sm" role="group" aria-label="月">' + shown.map(function (m) {
         return '<button type="button" data-ym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + (isAdmin() && !m.published ? '<small class="seg-note">非公開</small>' : '') + '</button>';
       }).join('') + '</div>' +
       (isAdmin() ? publishBar(d) : '') +
-      '<div class="row">' +
-      (isAdmin() ? '<label class="toggle" for="focus">強調する人 <select id="focus" class="date-input"><option value="">（なし）</option>' +
-        st.me.members.map(function (m) { return '<option value="' + u.esc(m.name) + '"' + (m.name === st.focus ? ' selected' : '') + '>' + u.esc(m.name) + '</option>'; }).join('') + '</select></label>' : '') +
-      (me ? '<span class="sub">' + (isAdmin() ? u.esc(me) + 'の' : '') + u.monthLabel(d.ym) + 'の出勤 <b class="num" style="font-size:18px">' + count + '</b>枠' + (lim ? ' / 上限' + lim : '') + '</span>' : '') +
-      '</div>' +
-      '<div class="card" style="padding:10px">' + calendar(rows, me, today) +
+      '<div class="card cal-card">' + calendar(rows, me, today) +
       '<div class="legend">' +
-      (me ? '<span><span class="sm day on">昼</span> <span class="sm night on">夜</span> ＝' + (isAdmin() ? 'その人' : '自分') + 'の出番</span>' : '<span><span class="sm aki">未定</span>＝まだ人が入っていない枠</span>') +
-      '<span><span class="grade-tag">G</span>＝グレード開催</span></div></div>' +
-      (selRow ? detail(selRow, me, today) : '') +
-      '<p class="fresh">日付をタップすると、その日の全員が下に出ます。' + (st.fetchedAt ? ' ' + u.pad(st.fetchedAt.getHours()) + ':' + u.pad(st.fetchedAt.getMinutes()) + '時点のシフト表です。' : '') + '</p>';
+      (me ? '<span><span class="sm day on">昼</span><span class="sm night on">夜</span>＝' + (isAdmin() ? 'その人' : '自分') + 'の出番</span>' : '<span><span class="sm aki">未定</span>＝人が入っていない枠</span>') +
+      '<span><span class="grade-tag">G</span>＝グレード</span>' +
+      (me ? '<span class="legend-count">' + (isAdmin() ? u.esc(me) + ' ' : '') + '<b class="num">' + count + '</b>枠' + (lim ? '/' + lim : '') + '</span>' : '') +
+      '</div></div>' +
+      (selRow ? detail(selRow, me, today) : '');
     bind(el);
   }
 
