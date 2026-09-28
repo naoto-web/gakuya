@@ -20,12 +20,13 @@
 <!-- 🔴このリポジトリは公開。人名・鍵・売上をコードに書かない（名前はGASから受け取る） -->
 <div class="app">
   <header class="top">
+    <!-- 管理者だけ：いちばん上の細い帯（配信者として見る／管理者に戻る）。
+         🔑この帯より下は、配信者でログインしたときと同じ見た目にする（9/29 Naoto） -->
+    <div id="viewas" class="viewas" hidden></div>
     <div class="top-row">
       <h1 class="brand"><img src="img/logo.png" alt="俺たちの競輪ライブ" width="333" height="160"></h1>
       <div class="who-now" id="who-now"></div>
     </div>
-    <!-- 管理者だけ：配信者として見る／管理者に戻る -->
-    <div id="viewas" class="viewas" hidden></div>
   </header>
 
   <main id="view" class="view">
