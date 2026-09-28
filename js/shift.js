@@ -101,6 +101,25 @@ var SHIFT = (function () {
     });
     return '<div class="cal-head mon">' + HEAD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="scal">' + h + '</div>';
   }
+  // その日の開催（GASが netkeiba の開催カレンダーから返す）。昼＝モーニング・昼間／夜＝ナイター・ミッドナイト
+  //   表示は「熊本F2 初日」。グレード開催はグレードを札で（9/29 Naoto「グレードはバッジも付けて」）
+  //   モーニング・ミッドナイトは小さい札で区別。取れなかった日は何も出さない（シフトは見られる）
+  var KUBUN_ORDER = { 'モーニング': 0, '昼間': 1, 'ナイター': 2, 'ミッドナイト': 3 };
+  function venues(date, slot) {
+    var list = (st.data && st.data.races && st.data.races[date]) || [];
+    list = list.filter(function (x) { return slot === '昼' ? KUBUN_ORDER[x.k] <= 1 : KUBUN_ORDER[x.k] >= 2; })
+      .sort(function (a, b) { return (KUBUN_ORDER[a.k] - KUBUN_ORDER[b.k]) || (a.v < b.v ? -1 : 1); });
+    if (!list.length) return '';
+    return '<div class="venues">' + list.map(function (x) {
+      var isG = /^G|^GP/.test(x.g);
+      return '<span class="vn">' +
+        (isG ? '<span class="gb ' + (slot === '夜' ? 'gb-night' : 'gb-day') + '">' + u.esc(x.g) + '</span>' + u.esc(x.v) : u.esc(x.v) + u.esc(x.g)) +
+        ' <span class="vd">' + u.esc(x.d) + '</span>' +
+        (x.k === 'モーニング' ? '<span class="vk">モーニング</span>' : x.k === 'ミッドナイト' ? '<span class="vk">ミッド</span>' : '') +
+        '</span>';
+    }).join('') + '</div>';
+  }
+
   function detail(r, me, today) {
     var lk = r.locked || [false, false, false, false];
     return '<div class="card day-detail">' +
@@ -110,7 +129,9 @@ var SHIFT = (function () {
       (r.grade ? '<span class="grade-line">' + gradeBadge(r.grade) + u.esc(r.grade.name) + '</span>' : '') + '</div>' +
       // 昼・夜の札はカレンダーの凡例と同じ「中が薄い」札（9/29 Naoto）
       '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0]) + chip(r.day[1], me, lk[1]) + '</div>' +
+      venues(r.date, '昼') +
       '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2]) + chip(r.night[1], me, lk[3]) + '</div>' +
+      venues(r.date, '夜') +
       (isAdmin() && r.memo ? '<p class="memo">メモ：' + u.esc(r.memo) + '</p>' : '') +
       '</div>';
   }
