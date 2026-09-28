@@ -76,6 +76,13 @@ var SHIFT = (function () {
     return '<span class="gb ' + (g.slot === '夜' ? 'gb-night' : 'gb-day') + '">' + g.slot + 'G</span>';
   }
 
+  // 日付の色：日曜・祝日＝赤（sun）／土曜＝青（sat）。祝日が土曜なら赤を優先（9/29 Naoto）
+  function dayClass(date) {
+    var dw = u.dow(date);
+    if (dw === 0 || u.holidayOf(date)) return 'sun';
+    return dw === 6 ? 'sat' : '';
+  }
+
   // 🔑月曜始まり（9/29 Naoto）。u.dow は日曜=0 なので (曜日+6)%7 で月曜=0 に直す
   var HEAD = ['月', '火', '水', '木', '金', '土', '日'];
   function calendar(rows, me, today) {
@@ -89,7 +96,7 @@ var SHIFT = (function () {
       var cls = ['scal-cell', slot === '昼' ? 'is-mine-day' : slot === '夜' ? 'is-mine-night' : '',
         r.date === today ? 'is-today' : '', r.date === st.sel ? 'is-sel' : ''].join(' ');
       h += '<button type="button" class="' + cls + '" data-date="' + r.date + '" aria-pressed="' + (r.date === st.sel) + '" aria-label="' + u.md(r.date) + (slot ? '・' + slot + 'の出番' : '') + (r.grade ? '・' + u.esc(r.grade.name) : '') + '">' +
-        '<span class="scal-top"><span class="scal-d num ' + (dw === 0 ? 'sun' : dw === 6 ? 'sat' : '') + '">' + Number(r.date.slice(8)) + '</span>' + gradeBadge(r.grade) + '</span>' +
+        '<span class="scal-top"><span class="scal-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span>' + gradeBadge(r.grade) + '</span>' +
         '<span class="scal-body">' + cellBody(r, me, slot) + '</span></button>';
     });
     return '<div class="cal-head mon">' + HEAD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="scal">' + h + '</div>';
@@ -97,7 +104,9 @@ var SHIFT = (function () {
   function detail(r, me, today) {
     var lk = r.locked || [false, false, false, false];
     return '<div class="card day-detail">' +
-      '<div class="row" style="justify-content:space-between"><strong class="day-detail-date">' + u.md(r.date) + (r.date === today ? ' 今日' : '') + '</strong>' +
+      // 日付の色はカレンダーと同じ（土＝青・日祝＝赤）。祝日は名前も添える
+      '<div class="row" style="justify-content:space-between"><strong class="day-detail-date"><span class="' + dayClass(r.date) + '">' + u.md(r.date) + '</span>' +
+      (u.holidayOf(r.date) ? '<span class="hol-name">' + u.esc(u.holidayOf(r.date)) + '</span>' : '') + (r.date === today ? ' 今日' : '') + '</strong>' +
       (r.grade ? '<span class="grade-line">' + gradeBadge(r.grade) + u.esc(r.grade.name) + '</span>' : '') + '</div>' +
       '<div class="slot-row"><span class="pill day">昼</span>' + chip(r.day[0], me, lk[0]) + chip(r.day[1], me, lk[1]) + '</div>' +
       '<div class="slot-row"><span class="pill night">夜</span>' + chip(r.night[0], me, lk[2]) + chip(r.night[1], me, lk[3]) + '</div>' +
