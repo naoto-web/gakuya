@@ -469,15 +469,27 @@ body { margin: 0; }
 /* 上部のロゴ（2026-09-29 アプリ名を「俺たちの競輪ライブ」に） */
 h1.brand { margin: 0; line-height: 0; }
 .brand img { height: 48px; width: auto; display: block; }
-/* 管理者の「配信者として見る」（9/29） */
-.viewas { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; }
-.viewas-cap { color: var(--fg-dim); font-weight: 700; }
-.viewas select { padding: 4px 8px; font-size: 14px; font-weight: 700; }
-.viewas.is-preview {
-  background: var(--gold-soft);
-  border: 1px solid var(--btn-line);
-  border-radius: 10px;
-  padding: 6px 10px;
+/* 管理者の帯（9/29 Naoto「配信者で見るを選んだ時は、配信者の見た目に寄せたい」）
+   ヘッダーのいちばん上に、アプリ本体と違う濃い色の1行を足すだけ＝帯より下は配信者の画面と同じ。
+   負のマージンでヘッダーの上の余白と左右の余白を食う＝帯の下の余白が配信者の画面と同じ12pxになる */
+.viewas {
+  display: flex; align-items: center; gap: 8px;
+  margin: -12px -16px 12px;
+  padding: 5px 16px;
+  background: #3a3c42; color: #f1efe9;
+  font-size: 12px; line-height: 1.4;
+  min-height: 34px; box-sizing: border-box;
 }
-.viewas.is-preview .viewas-cap { color: var(--gold); }
-.viewas .btn-sm { margin-left: auto; }
+.viewas.is-preview { background: #5b3fd6; }
+.viewas-cap { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.viewas select {
+  background: rgba(255, 255, 255, .14); color: #fff;
+  border: 1px solid rgba(255, 255, 255, .35); border-radius: 6px;
+  padding: 2px 6px; font-size: 13px; font-weight: 700;
+}
+.viewas select option { color: #23252a; background: #fff; }
+.viewas-back {
+  margin-left: auto; white-space: nowrap;
+  background: #fff; color: #5b3fd6; border: 0; border-radius: 6px;
+  padding: 3px 10px; font-size: 12px; font-weight: 700;
+}
