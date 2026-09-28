@@ -76,6 +76,27 @@
       const n = parseInt(String(hex).slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
       return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? '#23252a' : '#ffffff';
     },
+    // ── 休み希望の読み書き（9/29 Naoto「他→半・表示順は休→半→撮影・半休は1日を4分割してどこがNGか」）──
+    //   4分割＝開催区分（モーニング・デイ・ナイター・ミッド）。昼の枠＝モ・デ／夜の枠＝ナ・ミ
+    //   シートに書く形＝「半（モ・デNG）」。🔴「休」の字を入れない（シートの紫の警告は /休|撮影/ で判定＝半休が休扱いになる）
+    //   前からある「ミッドのみ」のような「〇〇のみ」は、それ以外の3つがNGの半休として読む
+    Q4: ['モーニング', 'デイ', 'ナイター', 'ミッド'],
+    Q4S: ['モ', 'デ', 'ナ', 'ミ'],
+    wishInfo: (v) => {
+      v = String(v || '').trim();
+      if (!v) return null;
+      if (/撮影/.test(v)) return { k: 'shoot', label: '撮影' };
+      if (/休/.test(v) && !/^半/.test(v)) return { k: 'off', label: '休' };
+      const S = OKL.u.Q4S, F = OKL.u.Q4;
+      let ng = null;
+      const m = /^半（(.*)NG）$/.exec(v);
+      if (m) ng = S.map((s, i) => m[1].indexOf(s) >= 0 ? i : -1).filter((i) => i >= 0);
+      const only = /^(モーニング|デイ|昼間|ナイター|ミッド|ミッドナイト)のみ$/.exec(v);
+      if (only) { const i = { モーニング: 0, デイ: 1, 昼間: 1, ナイター: 2, ミッド: 3, ミッドナイト: 3 }[only[1]]; ng = [0, 1, 2, 3].filter((x) => x !== i); }
+      return { k: 'half', ng, label: ng ? '半 ' + ng.map((i) => S[i]).join('・') + 'NG' : '半 ' + v, raw: v };
+    },
+    wishText: (ng) => ng && ng.length ? '半（' + ng.slice().sort().map((i) => OKL.u.Q4S[i]).join('・') + 'NG）' : '',
+    WISH_ORDER: { off: 0, half: 1, shoot: 2 },
     // 同じ種から毎回同じ乱数（サンプルを安定させる）
     rng: (seed) => () => {
       seed = (seed + 0x6d2b79f5) | 0;
