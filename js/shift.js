@@ -142,6 +142,7 @@ var SHIFT = (function () {
       // 昼・夜の札はカレンダーの凡例と同じ「中が薄い」札（9/29 Naoto）
       '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0]) + chip(r.day[1], me, lk[1]) + '</div>' +
       venues(r.date, '昼') +
+      '<hr class="slot-sep">' +  // 昼と夜の区切り（9/29 Naoto）
       '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2]) + chip(r.night[1], me, lk[3]) + '</div>' +
       venues(r.date, '夜') +
       (isAdmin() && r.memo ? '<p class="memo">メモ：' + u.esc(r.memo) + '</p>' : '') +
