@@ -19,7 +19,7 @@ var SALES = (function () {
   function load(ym) {
     st.loading = true; st.err = ''; draw();
     API.sales(ym).then(function (d) {
-      st.data[d.ym] = d; st.ym = d.ym; st.months = d.months;
+      st.data[d.ym] = d; st.ym = d.ym; st.months = d.months; st.asof = d.asof;
       // 出勤日数のためにその月のシフト（管理者は全月読める）。シートが無い月は失敗する＝売れた日で数える
       if (st.shift[d.ym] === undefined) {
         return API.shift(d.ym).then(function (s) { st.shift[d.ym] = s.rows ? s : null; }, function () { st.shift[d.ym] = null; });
@@ -29,7 +29,7 @@ var SALES = (function () {
   }
 
   // 人ごとの数字。シフトがあれば出勤日＝シフト、無ければ売れた日
-  function stats(rows, who, shift) {
+  function stats(rows, who, shift, ym) {
     var mine = rows.filter(function (r) { return r[C.who] === who; });
     var s = { gross: 0, tip: 0, fee: 0, n: 0, arts: mine.length, by: { '昼': 0, '夜': 0, G: 0 }, days: {}, dayD: {}, dayN: {}, dayG: {}, basis: shift ? 'shift' : 'sold' };
     mine.forEach(function (r) {
@@ -45,7 +45,7 @@ var SALES = (function () {
     });
     if (shift) {
       // noteのデータが途中までの月（例：9/18まで）は、その日までの出勤だけ数える（1出勤あたりが薄まらないように）
-      var upto = st.data[st.ym] && st.data[st.ym].asof && st.data[st.ym].asof.slice(0, 7) === st.ym ? st.data[st.ym].asof : '9999';
+      var upto = st.asof && st.asof.slice(0, 7) === ym ? st.asof : '9999';
       shift.rows.forEach(function (r) {
         if (r.date > upto) return;
         var d = +r.date.slice(8), inD = r.day.indexOf(who) >= 0, inN = r.night.indexOf(who) >= 0;
@@ -76,7 +76,7 @@ var SALES = (function () {
 
   // 全員＝人ごとに1行（押すとその人）
   function allView(d, shift) {
-    var list = members().map(function (m) { return { m: m, s: stats(d.rows, m.name, shift) }; }).filter(function (x) { return x.s.arts || x.s.nd; });
+    var list = members().map(function (m) { return { m: m, s: stats(d.rows, m.name, shift, st.ym) }; }).filter(function (x) { return x.s.arts || x.s.nd; });
     var sum = list.reduce(function (a, x) { a.total += x.s.total; a.net += x.s.net; return a; }, { total: 0, net: 0 });
     return '<div class="card s-all"><div class="s-all-head"><span></span><span>売上</span><span>手取り</span><span>出勤</span><span>1出勤</span></div>' +
       list.map(function (x) {
@@ -85,12 +85,81 @@ var SALES = (function () {
           '<span class="num">' + u.yen(x.s.total) + '</span><span class="num">' + u.yen(x.s.net) + '</span>' +
           '<span class="num">' + x.s.nd + '日</span><span class="num">' + (x.s.nd ? u.yen(x.s.total / x.s.nd) : '—') + '</span></button>';
       }).join('') +
-      '<div class="s-all-row is-sum"><span>合計</span><span class="num">' + u.yen(sum.total) + '</span><span class="num">' + u.yen(sum.net) + '</span><span></span><span></span></div></div>';
+      '<div class="s-all-row is-sum"><span>合計</span><span class="num">' + u.yen(sum.total) + '</span><span class="num">' + u.yen(sum.net) + '</span><span></span><span></span></div></div>' +
+      // 全員の比較＝人ごとに1段ずつの小さなグラフ（同じ目盛り）。メンバーカラー6色は1枚に重ねると見分けにくい（赤⇔橙・黄⇔緑）ので段に分ける
+      '<div class="card ch-card"><div class="ch-title">全員の比較<small>月ごとの売上（手数料の前）・目盛りは全員同じ</small></div><div id="ch-all">' + (st.all ? '' : '<p class="sub">読み込み中…</p>') + '</div></div>';
+  }
+
+  // ── グラフ（chart.js）。昼＝黄・夜＝藍（色の見分けは検査済み）・手数料＝灰 ──
+  var DAY_C = '#c9a227', NIGHT_C = '#4f5aa8', FEE_C = '#cfcac0', G_C = '#23252a';
+  // 全部の月（グラフ用）を1回だけ読む。出勤日数のため、シートがある月のシフトも読む
+  function loadAll() {
+    if (st.all || st.allLoading) return;
+    st.allLoading = true;
+    API.sales('all').then(function (d) {
+      st.all = d.all;
+      var have = (((SHIFT.state().data || {}).months) || []).map(function (m) { return m.ym; });
+      var need = Object.keys(d.all).filter(function (ym) { return st.shift[ym] === undefined && have.indexOf(ym) >= 0; });
+      return Promise.all(need.map(function (ym) {
+        return API.shift(ym).then(function (s) { st.shift[ym] = s.rows ? s : null; }, function () { st.shift[ym] = null; });
+      }));
+    }).catch(function () { st.allErr = true; }).then(function () { st.allLoading = false; draw(); });
+  }
+  function trend(who) {
+    return Object.keys(st.all).sort().map(function (ym) { return { ym: ym, s: stats(st.all[ym], who, st.shift[ym] || null, ym) }; });
+  }
+  function monthTip(ym) { return u.monthLabel(ym) + (st.asof && st.asof.slice(0, 7) === ym ? '（' + u.mdShort(st.asof) + 'まで）' : ''); }
+
+  function drawCharts(el, d) {
+    var box = function (id) { return el.querySelector('#' + id); };
+    if (st.who) {
+      var who = st.who, mine = d.rows.filter(function (r) { return r[C.who] === who; });
+      var n = u.daysIn(st.ym), cols = [];
+      for (var day = 1; day <= n; day++) {
+        var rs = mine.filter(function (r) { return r[C.day] === day; });
+        var dv = 0, nv = 0, g = false;
+        rs.forEach(function (r) { var v = r[C.gross] + r[C.tip]; if (r[C.slot] === '昼') dv += v; else nv += v; if (r[C.g]) g = true; });
+        var date = dateOf(st.ym, day);
+        cols.push({ tick: [1, 5, 10, 15, 20, 25, 30].indexOf(day) >= 0 ? String(day) : '', mark: g ? G_C : null,
+          segs: [{ v: dv, color: DAY_C }, { v: nv, color: NIGHT_C }],
+          tip: '<b>' + u.md(date) + '</b>' + (dv + nv ? (dv ? '<br>昼 ' + yen(dv) : '') + (nv ? '<br>夜 ' + yen(nv) : '') + (g ? '<br>グレードあり' : '') : '<br>売上なし') });
+      }
+      CHART.columns(box('ch-day'), cols, { title: '日ごとの売上', legend: [{ name: '昼', color: DAY_C }, { name: '夜', color: NIGHT_C }, { name: 'グレードの記事がある日', color: G_C, dot: true }] });
+      if (!st.all) { if (st.allErr) box('ch-mon').innerHTML = '<p class="sub">読み込めませんでした</p>'; else loadAll(); return; }
+      var tr = trend(who), mc = colorOf(who);
+      CHART.columns(box('ch-mon'), tr.map(function (x) {
+        return { tick: u.monthLabel(x.ym), segs: [{ v: x.s.net, color: mc }, { v: x.s.fee, color: FEE_C }],
+          tip: '<b>' + monthTip(x.ym) + '</b><br>売上 ' + yen(x.s.total) + '<br>手取り ' + yen(x.s.net) + '<br>出勤 ' + x.s.nd + '日' };
+      }), { title: '月ごとの売上', legend: [{ name: '手取り', color: mc }, { name: '手数料（積むと売上）', color: FEE_C }] });
+      CHART.lines(box('ch-per'), tr.map(function (x) { return u.monthLabel(x.ym); }), [
+        { name: '昼', color: DAY_C, values: tr.map(function (x) { return x.s.nD ? Math.round(x.s.by['昼'] / x.s.nD) : null; }) },
+        { name: '夜', color: NIGHT_C, values: tr.map(function (x) { return x.s.nN ? Math.round(x.s.by['夜'] / x.s.nN) : null; }) }
+      ], { title: '1出勤あたり', tips: tr.map(function (x) {
+        return '<b>' + monthTip(x.ym) + '</b><br>昼 ' + per(x.s.by['昼'], x.s.nD) + '（' + x.s.nD + '日）<br>夜 ' + per(x.s.by['夜'], x.s.nN) + '（' + x.s.nN + '日）';
+      }) });
+      return;
+    }
+    // 全員の比較
+    var all = box('ch-all');
+    if (!st.all) { if (st.allErr) all.innerHTML = '<p class="sub">読み込めませんでした</p>'; else loadAll(); return; }
+    var rowsBy = members().map(function (m) { return { m: m, tr: trend(m.name) }; }).filter(function (x) { return x.tr.some(function (t) { return t.s.total; }); });
+    var max = Math.max.apply(null, rowsBy.map(function (x) { return Math.max.apply(null, x.tr.map(function (t) { return t.s.total; })); }).concat([0]));
+    all.innerHTML = rowsBy.map(function (x, i) {
+      var last = x.tr[x.tr.length - 1];
+      return '<div class="sm-row"><div class="sm-head"><span class="wa-who" style="--mc:' + colorOf(x.m.name) + '">' + u.esc(x.m.name) + '</span>' +
+        '<small>' + monthTip(last.ym) + ' ' + yen(last.s.total) + '</small></div><div id="sm-' + i + '"></div></div>';
+    }).join('');
+    rowsBy.forEach(function (x, i) {
+      CHART.columns(all.querySelector('#sm-' + i), x.tr.map(function (t) {
+        return { tick: u.monthLabel(t.ym), segs: [{ v: t.s.total, color: colorOf(x.m.name) }],
+          tip: '<b>' + u.esc(x.m.name) + ' ' + monthTip(t.ym) + '</b><br>売上 ' + yen(t.s.total) + '<br>出勤 ' + t.s.nd + '日' };
+      }), { h: 86, max: max, title: x.m.name + 'の月ごとの売上' });
+    });
   }
 
   // 個人＝数字のまとめ＋昼・夜・グレード＋記事ごと（日付の新しい順・その日の中は昼→夜）
   function oneView(d, shift, who) {
-    var s = stats(d.rows, who, shift);
+    var s = stats(d.rows, who, shift, st.ym);
     var mine = d.rows.filter(function (r) { return r[C.who] === who; });
     var byDay = {};
     mine.forEach(function (r) { (byDay[r[C.day]] = byDay[r[C.day]] || []).push(r); });
@@ -105,6 +174,9 @@ var SALES = (function () {
       '<div class="s-k"><small>1出勤あたり</small><b class="num">' + per(s.total, s.nd) + '</b><small>記事' + s.arts + '本・' + u.yen(s.n) + '件</small></div></div>' +
       '<div class="card s-brk"><div class="s-br s-br-head"><span></span><span>売上</span><span>出勤</span><span>1出勤あたり</span></div>' +
       line('昼', 'lg-day', s.by['昼'], s.nD) + line('夜', 'lg-night', s.by['夜'], s.nN) + line('G', 'gb gb-day', s.by.G, s.nG) + '</div>' +
+      '<div class="card ch-card"><div class="ch-title">日ごとの売上<small>' + u.monthLabel(st.ym) + '・押すと金額</small></div><div id="ch-day"></div></div>' +
+      '<div class="card ch-card"><div class="ch-title">月ごとの売上</div><div id="ch-mon">' + (st.all ? '' : '<p class="sub">読み込み中…</p>') + '</div></div>' +
+      '<div class="card ch-card"><div class="ch-title">1出勤あたりの売上<small>昼・夜</small></div><div id="ch-per">' + (st.all ? '' : '<p class="sub">読み込み中…</p>') + '</div></div>' +
       '<div class="card s-arts">' + (days.length ? days.map(function (day) {
         var date = dateOf(st.ym, day);
         var rs = byDay[day].sort(function (a, b) { return (a[C.slot] === b[C.slot] ? 0 : a[C.slot] === '昼' ? -1 : 1) || b[C.gross] - a[C.gross]; });
@@ -134,13 +206,14 @@ var SALES = (function () {
       (shift ? 'シフト（実際に出た人）' : 'この月はシフト表が無いので、その枠の記事が売れた日') +
       (d.asof && d.asof.slice(0, 7) === st.ym ? '。この月はnoteのデータが' + u.mdShort(d.asof) + 'までなので、出勤もその日まで数えています' : '') + '。手数料は決済方法ごとの推定（収支表と±0.3%）。</p>';
     bind(el);
+    drawCharts(el, d);
   }
 
   function bind(el) {
     var ym = el.querySelector('#s-ym'), who = el.querySelector('#s-who'), rl = el.querySelector('#s-reload');
     if (ym) ym.addEventListener('change', function () { st.ym = ym.value; if (st.data[st.ym]) draw(); else load(st.ym); });
     if (who) who.addEventListener('change', function () { st.who = who.value; draw(); window.scrollTo(0, 0); });
-    if (rl) rl.addEventListener('click', function () { if (st.loading) return; delete st.data[st.ym]; delete st.shift[st.ym]; load(st.ym); });
+    if (rl) rl.addEventListener('click', function () { if (st.loading) return; delete st.data[st.ym]; delete st.shift[st.ym]; st.all = null; st.allErr = false; load(st.ym); });
     el.querySelectorAll('[data-swho]').forEach(function (b) { b.addEventListener('click', function () { st.who = b.dataset.swho; draw(); window.scrollTo(0, 0); }); });
   }
 
