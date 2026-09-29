@@ -759,8 +759,9 @@ button.name.is-edit:active { transform: translateY(1px); filter: brightness(.95)
 .pick.is-ng .pick-why { color: var(--ng); }
 .pick.is-ng.is-armed { border: 2px solid var(--ng); background: var(--ng-soft); color: var(--fg); }
 .pick-cap { font-size: 12px; color: var(--fg-dim); margin-top: 2px; }
-.pick-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.pick-row .btn { flex: 1; min-height: 40px; }
+/* 2列に並べる（9/30「🔒1人配信で確定」を足して4つになり、1行だと字が折り返したため） */
+.pick-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pick-row .btn { min-height: 40px; }
 .memo-inp { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; resize: vertical; }
 .ops { display: grid; gap: 8px; }
 .op { display: grid; gap: 2px; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line2); background: var(--sunk); font: inherit; cursor: pointer; color: var(--fg); }
@@ -901,3 +902,6 @@ button.lc:active { filter: brightness(.93); }
 
 /* 撮影の日のバッジ（9/30 Naoto）＝休み希望の「撮影」と同じ紫 */
 .sb-shoot { display: inline-block; font-size: 10px; font-weight: 700; line-height: 1.5; padding: 0 5px; border-radius: 4px; background: var(--shoot); color: #fff; white-space: nowrap; }
+/* 強調なし（4人の頭文字）の撮影の印＝日付の行に小さく（9/30 Naoto） */
+.shoot-line { display: flex; align-items: center; gap: 6px; font-size: 13px; margin: 2px 0 6px; }
+.scal-top .sb-q { padding: 0 2px; font-size: 9px; line-height: 14px; flex-shrink: 0; letter-spacing: -.03em; }
