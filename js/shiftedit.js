@@ -280,7 +280,10 @@ var EDIT = (function () {
 
   // ── 月まとめての操作（シートのPCメニューと同じ） ──
   var OPS = [
-    { op: 'fillnight', label: '🌙夜枠に一括入力', desc: '選んだ人を、休み希望の日以外の夜枠に全部入れます（空いている枠だけ・先に何日入るかを見せます）', pick: true },
+    { op: 'fillnight', label: '🌙夜枠に一括入力', desc: '選んだ人を、休み希望の日以外の夜枠に全部入れます（空いている枠だけ・先に何日入るかを見せます）', pick: true, dry: true },
+    // 9/29 Naoto「一括入力した人をまとめて確定させたい」＝人ごとにまとめて🔒
+    { op: 'lockperson', label: '🔒この人の枠を全部確定', desc: '選んだ人がこの月に入っている枠を、全部🔒確定にします', pick: true },
+    { op: 'unlockperson', label: '🔓この人の確定を全部外す', desc: '選んだ人の🔒確定を、この月の分だけ全部外します（名前は残ります）', pick: true },
     { op: 'autofill', label: '🤖自動入力', desc: '空欄のうち、入れる人が1人しかいない枠を埋めます（確定にはしません）' },
     { op: 'sort', label: '🔃並び替え', desc: '各日の①②を設定シートの並び順にそろえます' },
     { op: 'reset', label: '🧹確定以外を消す', desc: '🔒確定していない名前を全部消します（あとで戻せます）', danger: true },
@@ -318,7 +321,8 @@ var EDIT = (function () {
             H.render();
             var n = x.bulk ? x.bulk.count : 0;
             var DONE = { autofill: n + '枠を埋めました', sort: n + 'か所を入れ替えました', reset: n + '枠を消しました', reset_all: n + '枠を消しました',
-              fillnight: (extra && extra.name) + 'を' + n + '日入れました' };
+              fillnight: (extra && extra.name) + 'を' + n + '日入れました',
+              lockperson: (extra && extra.name) + 'の' + n + '枠を確定しました', unlockperson: (extra && extra.name) + 'の' + n + '枠の確定を外しました' };
             APP.toast(o.label + '：' + (DONE[o.op] || n + '枠を戻しました'));
           }).catch(function () {
             close();
@@ -338,6 +342,15 @@ var EDIT = (function () {
         box.querySelectorAll('[data-person]').forEach(function (b) {
           b.addEventListener('click', function () {
             var name = b.dataset.person;
+            if (!o.dry) {  // 確定・解除：数はここで数える（今の画面の中身＝押した分も含む）
+              var on = o.op === 'lockperson', cnt = 0;
+              d.rows.forEach(function (r) {
+                r.day.concat(r.night).forEach(function (v, k) { if (v === name && !!(r.locked && r.locked[k]) !== on) cnt++; });
+              });
+              if (!cnt) { box.innerHTML = '<p>' + u.esc(name) + 'は' + (on ? '確定していない枠がありません' : '確定している枠がありません') + '</p>'; return; }
+              ask(o, '<b>' + u.esc(name) + '</b>の' + u.monthLabel(d.ym) + 'の枠を<b>' + cnt + '枠</b>' + (on ? '🔒確定にします。' : '確定を外します。'), { name: name });
+              return;
+            }
             box.innerHTML = '<p>' + u.esc(name) + 'を入れたらどうなるか計算しています…</p>';
             API.bulk(d.ym, o.op, { name: name, dry: true }).then(function (x) {
               var r = (x.bulk && x.bulk.filled) || { count: 0, skip: {} };
