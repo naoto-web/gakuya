@@ -215,6 +215,36 @@ var SHIFT = (function () {
       }).join('') + '</div>';
   }
 
+  // 管理者の全体の下：人ごとの出勤日数（9/29 Naoto「全体の下の方に出勤日数カウント」）
+  //   日数＝昼か夜に入っている日（個人のカレンダーの「〇日/〇日」と同じ数え方）・内訳は昼／夜の枠数。上限＝設定シート
+  //   上限ちょうど＝印／超え＝赤。最後の行＝まだ埋まっていない枠（未定）と1人配信の枠の数
+  function countTable(rows, me) {
+    var ms = st.me.members || [];
+    var c = {};
+    ms.forEach(function (m) { c[m.name] = { days: 0, day: 0, night: 0 }; });
+    var open = 0, solo = 0;
+    rows.forEach(function (r) {
+      var seen = {};
+      r.day.concat(r.night).forEach(function (v, k) {
+        if (v === '') { open++; return; }
+        if (v === '空き') { solo++; return; }
+        if (!c[v]) return;
+        c[v][k < 2 ? 'day' : 'night']++;
+        if (!seen[v]) { seen[v] = 1; c[v].days++; }
+      });
+    });
+    return '<div class="card cnt-card"><div class="cnt-head"><b>出勤日数</b><span class="sub">' + u.monthLabel(st.data.ym) + '・' + rows.length + '日</span></div>' +
+      '<div class="cnt-grid">' + ms.map(function (m) {
+        var x = c[m.name], lim = m.limit;
+        var st2 = lim && x.days > lim ? ' is-over' : lim && x.days === lim ? ' is-full' : '';
+        return '<div class="cnt-row' + st2 + (m.name === me ? ' is-me' : '') + '">' +
+          '<span class="wa-who" style="--mc:' + (m.color || '#9aa0aa') + '">' + u.esc(m.name) + '</span>' +
+          '<span class="cnt-n"><b class="num">' + x.days + '</b>' + (lim ? '<small>/' + lim + '</small>' : '') + '日' + (st2 === ' is-full' ? '<i>上限</i>' : st2 ? '<i>超え</i>' : '') + '</span>' +
+          '<span class="cnt-split"><span class="lg lg-day">昼</span>' + x.day + '<span class="lg lg-night">夜</span>' + x.night + '</span></div>';
+      }).join('') + '</div>' +
+      '<div class="cnt-foot">未定 <b class="num">' + open + '</b>枠・1人配信 <b class="num">' + solo + '</b>枠</div></div>';
+  }
+
   // 全体モードの見本：メンバーカラーと名前・1人配信・未定
   function allLegend(me) {
     return '<div class="legend all-legend">' + (st.me.members || []).map(function (m) {
@@ -398,7 +428,7 @@ var SHIFT = (function () {
       (isAdmin() ? publishBar(d) : '') +
       // 選んだ日の枠＝見ている人（管理者は強調中の人）のメンバーカラー（9/29 Naoto）
       // 全体＝1日1行の縦一覧（9/29 Naoto「全体のカレンダーは縦一列で1日一行」）／個人＝月カレンダー＋下に詳細
-      (all ? dayList(rows, me, today) :
+      (all ? dayList(rows, me, today) + (isAdmin() ? countTable(rows, me) : '') :
       '<div class="card cal-card"' + (me && colorOf(me) ? ' style="--sel:' + colorOf(me) + '"' : '') + '>' + calendar(rows, me, today, false) +
       '<div class="legend">' +
       (me ? '<span><span class="lg lg-day">昼</span><span class="lg lg-night">夜</span>＝' + (isAdmin() ? 'その人' : '自分') + 'の出番（中は相方）</span>' : '<span><span class="sm aki">未定</span>＝人が入っていない枠</span>') +
