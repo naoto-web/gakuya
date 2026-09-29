@@ -66,6 +66,7 @@ var API = (function () {
   return {
     me: function () { return get('me'); },
     shift: function (ym) { return get('shift', { ym: ym }); },
+    sales: function (ym) { return get('sales', { ym: ym }); },   // 実績タブ（今は管理者だけ・sales.js）
     publish: function (ym, on) { return post('publish', { ym: ym, on: on }); },
     // シフトの編集（管理者だけ）。expect＝画面で見ていた中身（シートで変わっていたら書かずに conflict）
     setSlot: function (ym, date, slot, value, expect) { return post('set', { ym: ym, date: date, slot: slot, value: value, expect: expect }); },
