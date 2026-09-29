@@ -432,6 +432,8 @@ var SHIFT = (function () {
         return '<button type="button" data-ym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + (isAdmin() && !m.published ? '<small class="seg-note">非公開</small>' : '') + '</button>';
       }).join('') + '</div>' +
       (isAdmin() ? publishBar(d) : '') +
+      // 💡次に決める枠（管理者の編集中だけ・1行）
+      (EDIT.can() && EDIT.suggestBar && !st.confirm ? EDIT.suggestBar() : '') +
       // 選んだ日の枠＝見ている人（管理者は強調中の人）のメンバーカラー（9/29 Naoto）
       // 全体＝1日1行の縦一覧（9/29 Naoto「全体のカレンダーは縦一列で1日一行」）／個人＝月カレンダー＋下に詳細
       (all ? dayList(rows, me, today) + (isAdmin() ? countTable(rows, me) : '') :
@@ -477,6 +479,8 @@ var SHIFT = (function () {
     el.querySelectorAll('[data-edit-wish]').forEach(function (b) { b.addEventListener('click', function () { EDIT.openWish(b.dataset.editWish); }); });
     el.querySelectorAll('[data-edit-memo]').forEach(function (b) { b.addEventListener('click', function () { EDIT.openMemo(b.dataset.editMemo); }); });
     el.querySelectorAll('[data-lock-day]').forEach(function (b) { b.addEventListener('click', function () { EDIT.lockDay(b.dataset.lockDay, b.dataset.on === '1'); }); });
+    el.querySelectorAll('.sg-main[data-sg-date]').forEach(function (b) { b.addEventListener('click', function () { EDIT.openSlot(b.dataset.sgDate, +b.dataset.sgSlot); }); });
+    if (q('#sg-more')) q('#sg-more').addEventListener('click', function () { EDIT.openSuggest(); });
     if (q('#bulk-menu')) q('#bulk-menu').addEventListener('click', function () { EDIT.openMenu(); });
     if (q('#focus')) q('#focus').addEventListener('change', function () { st.focus = q('#focus').value; render(el); });
     if (q('#pub-ask')) q('#pub-ask').addEventListener('click', function () { st.confirm = true; render(el); });
