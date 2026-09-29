@@ -884,3 +884,7 @@ button.lc:active { filter: brightness(.93); }
 .sg-main small { font-size: 11px; color: var(--fg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sg-bar.is-zero .sg-main small { color: var(--ng); font-weight: 700; }
 .sg-more { flex: none; }
+/* 出勤日数の昼・夜バッジを縦一列に（数字の幅を2桁ぶんに固定・右寄せ）9/29 Naoto */
+.cnt-split { display: grid; grid-template-columns: auto 2.2em auto 2.2em; align-items: center; column-gap: 3px; }
+.cnt-split .lg { margin-left: 0; }
+.cnt-v { text-align: left; padding-left: 2px; }
