@@ -377,7 +377,56 @@ var EDIT = (function () {
     });
   }
 
+  // ── 💡次に決める枠（9/29 Naoto「次ここを決めた方がいいんじゃない？ってのを教えてくれるやつ」）──
+  //   空いている枠ごとに「今入れられる人（候補外の理由がない人）」を数え、少ない順に並べる。
+  //   同数なら Naoto の優先順位＝グレード開催の枠 ＞ 夜 ＞ 普段の昼、その次は日付の早い順
+  function suggest() {
+    var d = data();
+    if (!d || !d.rows) return [];
+    var out = [];
+    d.rows.forEach(function (r) {
+      for (var s = 0; s < 4; s++) {
+        if (valOf(r, s) !== '') continue;
+        var night = s >= 2;
+        var grade = !!(r.grade && (r.grade.slot === '夜') === night);
+        var cands = H.members().filter(function (m) { return !reasons(r.date, s, m.name).length; }).map(function (m) { return m.name; });
+        out.push({ date: r.date, s: s, cands: cands, grade: grade, rank: grade ? 0 : night ? 1 : 2 });
+      }
+    });
+    out.sort(function (a, b) { return (a.cands.length - b.cands.length) || (a.rank - b.rank) || (a.date < b.date ? -1 : a.date > b.date ? 1 : a.s - b.s); });
+    return out;
+  }
+  function suggestLabel(x) {
+    return u.md(x.date) + ' ' + SLOT[x.s] + (x.grade ? '（グレード）' : '');
+  }
+  function candText(x) {
+    return x.cands.length ? '候補' + x.cands.length + '人（' + x.cands.map(u.esc).join('・') + '）' : '候補0人＝1人配信か候補外から';
+  }
+  // 管理者の帯の下の1行
+  function suggestBar() {
+    var list = suggest();
+    if (!list.length) return '<div class="sg-bar is-done">✅ 空いている枠はありません</div>';
+    var x = list[0];
+    return '<div class="sg-bar' + (x.cands.length ? '' : ' is-zero') + '"><button type="button" class="sg-main" data-sg-date="' + x.date + '" data-sg-slot="' + x.s + '">' +
+      '<b>💡次はここ</b> ' + suggestLabel(x) + '<small>' + candText(x) + '</small></button>' +
+      '<button type="button" class="link-btn sg-more" id="sg-more">一覧</button></div>';
+  }
+  function openSuggest() {
+    var list = suggest().slice(0, 10);
+    var html = head('次に決める枠', '候補が少ない順（同じならグレード＞夜＞昼、日付順）。押すとその枠の候補が開きます') +
+      '<div class="ops">' + list.map(function (x) {
+        return '<button type="button" class="op' + (x.cands.length ? '' : ' is-danger') + '" data-sg-date="' + x.date + '" data-sg-slot="' + x.s + '"><b>' + suggestLabel(x) + '</b><span>' + candText(x) + '</span></button>';
+      }).join('') + '</div>';
+    open(html, function (el) {
+      el.querySelectorAll('[data-sg-date]').forEach(function (b) {
+        b.addEventListener('click', function () { openSlot(b.dataset.sgDate, +b.dataset.sgSlot); });
+      });
+    });
+  }
+
   return {
+    suggestBar: suggestBar,
+    openSuggest: openSuggest,
     attach: function (hook) { H = hook; },
     // 編集できるのは管理者本人の鍵で開いているとき（プレビュー中は配信者と同じ＝見るだけ）
     can: function () { var d = H && H.data(); return !!(H && H.isAdmin() && d && d.edit && d.edit.editable); },
