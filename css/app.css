@@ -888,3 +888,11 @@ button.lc:active { filter: brightness(.93); }
 .cnt-split { display: grid; grid-template-columns: auto 2.2em auto 2.2em; align-items: center; column-gap: 3px; }
 .cnt-split .lg { margin-left: 0; }
 .cnt-v { text-align: left; padding-left: 2px; }
+/* 管理者の個人カレンダー（強調なし）の4人の頭文字（9/29 Naoto A案）＝上の行＝昼・下の行＝夜 */
+.qd { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; width: 100%; padding: 0 2px; box-sizing: border-box; }
+.qi { font-style: normal; font-size: 11px; font-weight: 700; line-height: 15px; text-align: center; border-radius: 3px;
+  border: 1px solid var(--mc, #9aa0aa); background: color-mix(in srgb, var(--mc, #9aa0aa) 18%, #ffffff); color: #23252a; min-width: 0; }
+.qi.is-open { border: 1px dashed var(--line2); background: transparent; color: var(--fg-faint); }
+.qi.is-solo { border-color: #5a5f69; background: #eceef1; color: #4a4f58; }
+.qi.is-todo { background: #ffd6e7; border-color: #d0457a; color: #a8214f; }
+.qi.is-locked { filter: grayscale(1); opacity: .45; }
