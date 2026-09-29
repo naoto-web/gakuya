@@ -164,6 +164,8 @@ var EDIT = (function () {
       (ng.length ? '<div class="pick-cap">候補外（押すと理由を確認→もう一度押すと入れます）</div><div class="pick-grid">' + ng.map(function (x) { return item(x, true); }).join('') + '</div>' : '') +
       '<div class="pick-row">' +
       '<button type="button" class="btn ghost btn-sm" data-pick="' + AKI + '">1人配信</button>' +
+      // 9/30 Naoto「1人配信で確定」＝空き＋🔒を1回で（今すでに🔒の1人配信なら出さない）
+      (cur === AKI && locked ? '' : '<button type="button" class="btn ghost btn-sm" id="solo-lock">🔒1人配信で確定</button>') +
       '<button type="button" class="btn ghost btn-sm" data-pick="">空欄に戻す</button>' +
       (cur ? '<button type="button" class="btn ghost btn-sm" data-lock="' + (locked ? '0' : '1') + '">' + (locked ? '確定を外す' : '🔒確定にする') + '</button>' : '') +
       '</div>' +
@@ -185,6 +187,9 @@ var EDIT = (function () {
       });
       var tw = el.querySelector('#to-wish');
       if (tw) tw.addEventListener('click', function () { openWish(date, { back: function () { openSlot(date, s); } }); });
+      // 書き換え→確定の2本を順番待ちに積む（保存は1本ずつ送るので、確定は書き換えが済んでから届く）
+      var sl = el.querySelector('#solo-lock');
+      if (sl) sl.addEventListener('click', function () { setSlot(date, s, AKI); lockSlots(date, [s], true); });
       var lk = el.querySelector('[data-lock]');
       if (lk) lk.addEventListener('click', function () { lockSlots(date, [s], lk.dataset.lock === '1'); });
     });
