@@ -280,6 +280,7 @@ var EDIT = (function () {
 
   // ── 月まとめての操作（シートのPCメニューと同じ） ──
   var OPS = [
+    { op: 'fillnight', label: '🌙夜枠に一括入力', desc: '選んだ人を、休み希望の日以外の夜枠に全部入れます（空いている枠だけ・先に何日入るかを見せます）', pick: true },
     { op: 'autofill', label: '🤖自動入力', desc: '空欄のうち、入れる人が1人しかいない枠を埋めます（確定にはしません）' },
     { op: 'sort', label: '🔃並び替え', desc: '各日の①②を設定シートの並び順にそろえます' },
     { op: 'reset', label: '🧹確定以外を消す', desc: '🔒確定していない名前を全部消します（あとで戻せます）', danger: true },
@@ -287,6 +288,7 @@ var EDIT = (function () {
       warn: '🔒確定した枠も消えます。' },
     { op: 'reset_all_undo', label: '↩️直前の全部消すを戻す', desc: '消した名前と🔒確定を、いま空欄の枠にだけ戻します', undo: 'resetAll' },
     { op: 'autofill_undo', label: '↩️直前の自動入力を戻す', desc: '自動で入れた枠のうち、まだそのままの枠を空欄に戻します', undo: 'autofill' },
+    { op: 'fill_undo', label: '↩️直前の一括入力を戻す', desc: '一括で入れた枠のうち、まだそのままの枠を空欄に戻します', undo: 'fill' },
     { op: 'reset_undo', label: '↩️直前のリセットを戻す', desc: '消した名前を、いま空欄の枠にだけ戻します', undo: 'reset' }
   ];
   function openMenu() {
@@ -299,31 +301,61 @@ var EDIT = (function () {
       '<div class="op-confirm" hidden></div>';
     open(html, function (el) {
       var box = el.querySelector('.op-confirm');
+      // 確認→実行（extra＝{ name } など）
+      function ask(o, msg, extra) {
+        box.hidden = false;
+        box.innerHTML = '<p>' + msg + (o.warn ? '<br><b class="danger-note">' + o.warn + '</b>' : '') + '</p>' +
+          '<div class="btn-row"><button type="button" class="btn ghost" id="op-no">やめる</button><button type="button" class="btn" id="op-yes">実行する</button></div>';
+        box.scrollIntoView({ block: 'nearest' });
+        box.querySelector('#op-no').addEventListener('click', function () { box.hidden = true; });
+        box.querySelector('#op-yes').addEventListener('click', function () {
+          var y = box.querySelector('#op-yes');
+          y.disabled = true; y.textContent = '実行中…';
+          API.bulk(d.ym, o.op, extra).then(function (x) {
+            close();
+            H.saveCache(x);
+            H.applyServer(x);
+            H.render();
+            var n = x.bulk ? x.bulk.count : 0;
+            var DONE = { autofill: n + '枠を埋めました', sort: n + 'か所を入れ替えました', reset: n + '枠を消しました', reset_all: n + '枠を消しました',
+              fillnight: (extra && extra.name) + 'を' + n + '日入れました' };
+            APP.toast(o.label + '：' + (DONE[o.op] || n + '枠を戻しました'));
+          }).catch(function () {
+            close();
+            APP.toast(o.label + 'を実行できませんでした。最新を読み直します', true);
+            H.reload();
+          });
+        });
+      }
+      // 🌙夜枠に一括入力：人を選ぶ→書かずに試算（何日入る・入れない日）→実行
+      function pickPerson(o) {
+        box.hidden = false;
+        box.innerHTML = '<p><b>' + o.label + '</b>：入れる人を選んでください</p><div class="pick-grid">' + H.members().map(function (m) {
+          return '<button type="button" class="pick" data-person="' + u.esc(m.name) + '" style="--mc:' + (m.color || '#9aa0aa') + '"><span class="pick-name">' + u.esc(m.name) + '</span></button>';
+        }).join('') + '</div><div class="btn-row"><button type="button" class="btn ghost" id="op-no">やめる</button></div>';
+        box.scrollIntoView({ block: 'nearest' });
+        box.querySelector('#op-no').addEventListener('click', function () { box.hidden = true; });
+        box.querySelectorAll('[data-person]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var name = b.dataset.person;
+            box.innerHTML = '<p>' + u.esc(name) + 'を入れたらどうなるか計算しています…</p>';
+            API.bulk(d.ym, o.op, { name: name, dry: true }).then(function (x) {
+              var r = (x.bulk && x.bulk.filled) || { count: 0, skip: {} };
+              var sk = r.skip || {};
+              var line = function (label, a) { return a && a.length ? '<br><small>' + label + '：' + a.join('・') + '日</small>' : ''; };
+              ask(o, '<b>' + u.esc(name) + '</b>を' + u.monthLabel(d.ym) + 'の夜枠に<b>' + r.count + '日</b>入れます。' +
+                line('入れない（休み希望）', sk.wish) + line('入れない（もう入っている）', sk.already) +
+                line('入れない（夜が埋まっている）', sk.full) + line('入れない（翌日の昼＝夜明け）', sk.dawn), { name: name });
+            }).catch(function () { box.innerHTML = '<p class="danger-note">計算できませんでした。閉じてもう一度お試しください</p>'; });
+          });
+        });
+      }
       el.querySelectorAll('[data-op]').forEach(function (b) {
         b.addEventListener('click', function () {
           var o = OPS.filter(function (x) { return x.op === b.dataset.op; })[0];
           if (pending) { APP.toast('保存中です。終わってからもう一度押してください', true); return; }
-          box.hidden = false;
-          box.innerHTML = '<p><b>' + o.label + '</b>を' + u.monthLabel(d.ym) + 'に実行しますか？' + (o.warn ? '<br><b class="danger-note">' + o.warn + '</b>' : '') + '</p>' +
-            '<div class="btn-row"><button type="button" class="btn ghost" id="op-no">やめる</button><button type="button" class="btn" id="op-yes">実行する</button></div>';
-          box.querySelector('#op-no').addEventListener('click', function () { box.hidden = true; });
-          box.querySelector('#op-yes').addEventListener('click', function () {
-            var y = box.querySelector('#op-yes');
-            y.disabled = true; y.textContent = '実行中…';
-            API.bulk(d.ym, o.op).then(function (x) {
-              close();
-              H.saveCache(x);
-              H.applyServer(x);
-              H.render();
-              var n = x.bulk ? x.bulk.count : 0;
-              var DONE = { autofill: n + '枠を埋めました', sort: n + 'か所を入れ替えました', reset: n + '枠を消しました', reset_all: n + '枠を消しました' };
-              APP.toast(o.label + '：' + (DONE[o.op] || n + '枠を戻しました'));
-            }).catch(function () {
-              close();
-              APP.toast(o.label + 'を実行できませんでした。最新を読み直します', true);
-              H.reload();
-            });
-          });
+          if (o.pick) { pickPerson(o); return; }
+          ask(o, '<b>' + o.label + '</b>を' + u.monthLabel(d.ym) + 'に実行しますか？');
         });
       });
     });
