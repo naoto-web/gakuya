@@ -218,8 +218,10 @@ var SHIFT = (function () {
     var base = slot === '昼' ? 0 : 2, pair = slot === '昼' ? r.day : r.night;
     var names = (st.me.members || []).map(function (m) { return m.name; });
     var rank = function (n) { if (n === '') return 99; if (n === '空き') return 98; var i = names.indexOf(n); return i < 0 ? 97 : i; };
+    // 🔄9/29 Naoto「人を選んで見るとき、選んだ人のバッジが昼なら右側、夜なら左側」＝管理者が強調中のとき（真ん中に寄って昼夜が縦にそろう）
+    var pin = isAdmin() && me ? function (n) { return n === me ? (slot === '昼' ? 1 : -1) : 0; } : function () { return 0; };
     return [0, 1].map(function (j) { return { n: pair[j], k: base + j }; })
-      .sort(function (a, b) { return (rank(a.n) - rank(b.n)) || (a.k - b.k); })
+      .sort(function (a, b) { return (pin(a.n) - pin(b.n)) || (rank(a.n) - rank(b.n)) || (a.k - b.k); })
       .map(function (x) { return listChip(x.n, me, r.date, slot, K ? K(x.k) : null, lockOf(r, x.k)); }).join('');
   }
   function dayList(rows, me, today) {
