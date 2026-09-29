@@ -93,15 +93,16 @@ var SHIFT = (function () {
   // 半休の人の札＝出られる側だけメンバーカラー・出られない側は薄く（9/29 Naoto「相方から見たときに名前バッジも右半分だけ色塗る（左半分は薄く）」）
   //   昼の枠＝左モーニング｜右デイ／夜の枠＝左ナイター｜右ミッド。中身はGASの half（その日に入っている人の半休のNG区分だけ）
   //   塗りが半分になると白字が薄い側で読めない＝字は黒系に
-  function paintStyle(name, date, slot) {
-    var ng = name && st.data && st.data.half && st.data.half[date] && st.data.half[date][name];
+  // 詳細の名前の札（9/30 Naoto「日を押したときの詳細の名前のバッジは上の薄いやつと同じものを」＝配信者・管理者共通）
+  //   自分（管理者は強調中の人）＝塗りつぶし（一覧の自分の札と同じ・黒い縁は .is-me）／ほかの人＝薄い札（pcStyle）
+  //   半休＝出られる側だけ色（自分＝塗り｜22%・ほか＝30%｜白地に斜線）
+  function paintStyle(name, date, slot, me) {
     var c = colorOf(name);
-    if (!ng || !c) return colorStyle(name);
-    var qs = slot === '昼' ? [0, 1] : [2, 3];
-    var ngL = ng.indexOf(qs[0]) >= 0, ngR = ng.indexOf(qs[1]) >= 0;
-    if (!ngL && !ngR) return colorStyle(name);
-    var faint = 'color-mix(in srgb, ' + c + ' 22%, #ffffff)';
-    return ' style="background:linear-gradient(90deg,' + (ngL ? faint : c) + ' 0 50%,' + (ngR ? faint : c) + ' 50% 100%);color:#23252a"';
+    if (!name || !c) return colorStyle(name);
+    if (name !== me) return pcStyle(name, date, slot);
+    var ng = st.data && st.data.half && st.data.half[date] && st.data.half[date][name];
+    var hb = u.slotHalfBg(ng, slot, c, 'color-mix(in srgb, ' + c + ' 22%, #ffffff)');
+    return ' style="background:' + (hb || c) + ';color:' + (hb ? '#23252a' : inkOn(c)) + '"';
   }
   // カレンダーのマスの中の相方の札＝薄く（9/29 Naoto「相方の名前バッジは薄く」）＝メンバーカラー18%の地＋色の枠＋黒系の字。
   //   半休＝出られる側だけ30%・出られない側は白地に斜線（util.slotHalfBg）
@@ -390,10 +391,10 @@ var SHIFT = (function () {
       // 右上のグレード表示は消した（下の場の札と情報が重なる・9/29 Naoto）
       '</div>' +
       // 昼・夜の札はカレンダーの凡例と同じ「中が薄い」札（9/29 Naoto）
-      '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0], e(0), paintStyle(r.day[0], r.date, '昼')) + chip(r.day[1], me, lk[1], e(1), paintStyle(r.day[1], r.date, '昼')) + '</div>' +
+      '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0], e(0), paintStyle(r.day[0], r.date, '昼', me)) + chip(r.day[1], me, lk[1], e(1), paintStyle(r.day[1], r.date, '昼', me)) + '</div>' +
       venues(r.date, '昼') +
       '<hr class="slot-sep">' +  // 昼と夜の区切り（9/29 Naoto）
-      '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2], e(2), paintStyle(r.night[0], r.date, '夜')) + chip(r.night[1], me, lk[3], e(3), paintStyle(r.night[1], r.date, '夜')) + '</div>' +
+      '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2], e(2), paintStyle(r.night[0], r.date, '夜', me)) + chip(r.night[1], me, lk[3], e(3), paintStyle(r.night[1], r.date, '夜', me)) + '</div>' +
       venues(r.date, '夜') +
       // 管理者の編集：メモと、その日の4枠をまとめて確定／解除（枠ごとの変更は名前の札を押す）
       // 🔄9/29 Naoto「編集モードじゃないのに『この日を確定』がある・メモと休み希望も表示不要」＝編集オンのときだけ
