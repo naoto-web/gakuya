@@ -369,10 +369,11 @@ var SHIFT = (function () {
       '<div class="slot-row"><span class="lg lg-night slot-badge">夜</span>' + chip(r.night[0], me, lk[2], e(2), paintStyle(r.night[0], r.date, '夜')) + chip(r.night[1], me, lk[3], e(3), paintStyle(r.night[1], r.date, '夜')) + '</div>' +
       venues(r.date, '夜') +
       // 管理者の編集：メモと、その日の4枠をまとめて確定／解除（枠ごとの変更は名前の札を押す）
-      (ed ? '<div class="edit-row"><button type="button" class="memo memo-btn" data-edit-memo="' + r.date + '">メモ：' + (r.memo ? u.esc(r.memo) : '<span class="faint">なし</span>') + ' ✎</button>' +
+      // 🔄9/29 Naoto「編集モードじゃないのに『この日を確定』がある・メモと休み希望も表示不要」＝編集オンのときだけ
+      (ed && editOn() ? '<div class="edit-row"><button type="button" class="memo memo-btn" data-edit-memo="' + r.date + '">メモ：' + (r.memo ? u.esc(r.memo) : '<span class="faint">なし</span>') + ' ✎</button>' +
         '<button type="button" class="btn ghost btn-xs" data-lock-day="' + r.date + '" data-on="' + (allLocked ? '0' : '1') + '">' + (allLocked ? '確定を外す' : '🔒この日を確定') + '</button></div>'
-        : (isAdmin() && r.memo ? '<p class="memo">メモ：' + u.esc(r.memo) + '</p>' : '')) +
-      (ed ? wishLine(r.date) : '') +
+        : '') +
+      (ed && editOn() ? wishLine(r.date) : '') +
       '</div>';
   }
 
