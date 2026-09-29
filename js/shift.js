@@ -128,9 +128,10 @@ var SHIFT = (function () {
     return '<' + tag + ' class="name mc' + (name === me ? ' is-me' : '') + ed + '"' + (paint || colorStyle(name)) + '>' + (locked ? '<span class="lock" aria-label="確定">🔒</span>' : '') + u.esc(name) + end;
   }
 
-  // その日の自分の枠（昼／夜）。通しはシートの違反なので出ない前提だが、あれば昼を優先
+  // その日の自分の枠（昼／夜／通し）。通し＝昼にも夜にも入っている日（9/30 Naoto：通しで入る人がいる）
   function mySlot(r, me) {
     if (!me) return null;
+    if (r.day.indexOf(me) >= 0 && r.night.indexOf(me) >= 0) return '通し';
     if (r.day.indexOf(me) >= 0) return '昼';
     if (r.night.indexOf(me) >= 0) return '夜';
     return null;
@@ -150,6 +151,13 @@ var SHIFT = (function () {
       // 撮影の日＝紫の「撮影」バッジ（9/30 Naoto）。出どころ＝休み希望の「撮影」（配信者は本人の分・管理者は強調中の人）
       var shoot = /撮影/.test(wishFor(r.date, me)) ? '<span class="sb-shoot">撮影</span>' : '';
       if (!slot) return shoot;
+      // 通し＝相方を上＝昼・下＝夜の2段で（マスも上下で昼の黄／夜の藍・9/30 Naoto「上下2分割」）
+      if (slot === '通し') {
+        var pd = partnerOf(r, me, '昼'), pn = partnerOf(r, me, '夜');
+        return '<span class="pc-2">' +
+          '<span class="pc ' + (pd.cls || '') + '"' + (pd.name ? pcStyle(pd.name, r.date, '昼') : '') + '>' + u.esc(pd.label) + '</span>' +
+          '<span class="pc ' + (pn.cls || '') + '"' + (pn.name ? pcStyle(pn.name, r.date, '夜') : '') + '>' + u.esc(pn.label) + '</span></span>' + shoot;
+      }
       var p = partnerOf(r, me, slot);
       return '<span class="pc ' + (p.cls || '') + '"' + (p.name ? pcStyle(p.name, r.date, slot) : '') + '>' + u.esc(p.label) + '</span>' + shoot;
     }
@@ -328,7 +336,7 @@ var SHIFT = (function () {
     return (d.myWish || {})[date] || '';
   }
   function halfCell(date, me, slot) {
-    if (!slot) return '';
+    if (!slot || slot === '通し') return '';
     var i = u.wishInfo(wishFor(date, me));
     if (!i || i.k !== 'half' || !i.ng) return '';
     var qs = slot === '昼' ? [0, 1] : [2, 3];
@@ -348,14 +356,14 @@ var SHIFT = (function () {
       var dw = u.dow(r.date);
       var slot = all ? null : mySlot(r, me);
       // 自分の出勤日はマスごと塗る：昼＝薄い黄／夜＝紺（9/29 Naoto）
-      var cls = ['scal-cell', slot === '昼' ? 'is-mine-day' : slot === '夜' ? 'is-mine-night' : '',
+      var cls = ['scal-cell', slot === '昼' ? 'is-mine-day' : slot === '夜' ? 'is-mine-night' : slot === '通し' ? 'is-mine-both' : '',
         r.date === today ? 'is-today' : '', r.date === st.sel ? 'is-sel' : ''].join(' ');
       h += '<button type="button" class="' + cls + '"' + halfCell(r.date, me, slot) + ' data-date="' + r.date + '" aria-pressed="' + (r.date === st.sel) + '" aria-label="' + u.md(r.date) + (slot ? '・' + slot + 'の出番' : '') + (r.grade ? '・' + u.esc(r.grade.name) : '') + '">' +
         '<span class="scal-top"><span class="scal-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span>' +
         (!me && !all && isAdmin() ? shootMark(r) : '') +
         // グレードの札は「本人がその日その時間帯に出る」ときだけ（夜に出る日の昼Gは出さない・9/29 Naoto）。
         //   管理者で誰も強調していないときは全部出す（全体を見る画面なので）
-        (me && !all ? (slot && r.grade && r.grade.slot === slot ? gradeBadge(r.grade) : '') : gradeBadge(r.grade)) + '</span>' +
+        (me && !all ? (slot && r.grade && (r.grade.slot === slot || slot === '通し') ? gradeBadge(r.grade) : '') : gradeBadge(r.grade)) + '</span>' +
         (all ? '<span class="scal-body is-all">' + blocks(r, me) + '</span></button>' : '<span class="scal-body">' + cellBody(r, me, slot) + '</span></button>');
     });
     return '<div class="cal-head mon">' + HEAD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="scal">' + h + '</div>';
