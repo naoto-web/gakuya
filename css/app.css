@@ -904,4 +904,9 @@ button.lc:active { filter: brightness(.93); }
 .sb-shoot { display: inline-block; font-size: 10px; font-weight: 700; line-height: 1.5; padding: 0 5px; border-radius: 4px; background: var(--shoot); color: #fff; white-space: nowrap; }
 /* 強調なし（4人の頭文字）の撮影の印＝日付の行に小さく（9/30 Naoto） */
 .shoot-line { display: flex; align-items: center; gap: 6px; font-size: 13px; margin: 2px 0 6px; }
+/* 通しの日（9/30 Naoto「上下2分割」）＝上＝昼の黄／下＝夜の藍。境目は下の札（夜の相方）の上 */
+/*   藍の帯は夜の札より上下に少し広く取る（札と同じ高さだと札に隠れて見えない）。枠線は上と左右が昼の黄・下が夜の藍 */
+.scal-cell.is-mine-both { background: linear-gradient(to bottom, #fff3c4 0 calc(100% - 27px), #8f98d8 calc(100% - 27px) calc(100% - 26px), #e3e6f8 calc(100% - 26px)); border-color: #e0b84a #e0b84a #8f98d8; }
+.pc-2 { display: flex; flex-direction: column; gap: 9px; width: 100%; min-width: 0; }
+.scal-cell.is-mine-both .scal-body { flex-direction: column; align-items: stretch; }
 .scal-top .sb-q { padding: 0 2px; font-size: 9px; line-height: 14px; flex-shrink: 0; letter-spacing: -.03em; }
