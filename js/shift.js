@@ -120,6 +120,7 @@ var SHIFT = (function () {
 
   // edit＝{ date, slot }：管理者の編集中は押せる札（button）にする。見た目は同じ
   function chip(name, me, locked, edit, paint) {
+    locked = locked && editOn();  // 🔒は［✎編集］がオンのときだけ（9/30 Naoto「編集モードじゃない時はカギ不要」）
     var tag = edit ? 'button type="button" data-edit-date="' + edit.date + '" data-edit-slot="' + edit.slot + '"' : 'span';
     var end = edit ? '</button>' : '</span>';
     var ed = (edit ? ' is-edit' : '') + (locked && editOn() ? ' is-locked' : '') + (!name && editOn() ? ' is-todo' : '');
