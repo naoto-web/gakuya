@@ -898,3 +898,6 @@ button.lc:active { filter: brightness(.93); }
 .qi.is-locked { filter: grayscale(1); opacity: .45; }
 /* 区分ごとに1行（9/29 Naoto）＝行の間は詰める */
 .venues + .venues { margin-top: -2px; }
+
+/* 撮影の日のバッジ（9/30 Naoto）＝休み希望の「撮影」と同じ紫 */
+.sb-shoot { display: inline-block; font-size: 10px; font-weight: 700; line-height: 1.5; padding: 0 5px; border-radius: 4px; background: var(--shoot); color: #fff; white-space: nowrap; }
