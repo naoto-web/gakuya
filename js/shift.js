@@ -110,7 +110,7 @@ var SHIFT = (function () {
   function chip(name, me, locked, edit, paint) {
     var tag = edit ? 'button type="button" data-edit-date="' + edit.date + '" data-edit-slot="' + edit.slot + '"' : 'span';
     var end = edit ? '</button>' : '</span>';
-    var ed = edit ? ' is-edit' : '';
+    var ed = (edit ? ' is-edit' : '') + (locked && isAdmin() ? ' is-locked' : '') + (!name && isAdmin() ? ' is-todo' : '');
     if (!name) return '<' + tag + ' class="name is-empty' + ed + '">未定' + end;
     if (name === '空き') return '<' + tag + ' class="name is-solo' + ed + '">' + (locked ? '🔒' : '') + '1人配信' + end;  // 「空き」＝その枠は1人配信（9/29 Naoto「もっと一人配信って分かるように」）
     return '<' + tag + ' class="name mc' + (name === me ? ' is-me' : '') + ed + '"' + (paint || colorStyle(name)) + '>' + (locked ? '<span class="lock" aria-label="確定">🔒</span>' : '') + u.esc(name) + end;
@@ -174,9 +174,13 @@ var SHIFT = (function () {
   // 全体＝1日1行の縦一覧。左＝日付（土青・日祝赤・グレード札）／昼の2人／夜の2人（メンバーカラーの札）
   //   行を押すと、その行のすぐ下に詳細（場の札など）が開く＝一覧の下に出すと画面の外になるため
   // k＝枠の番号（0〜3）を渡すと編集モードの札（押すとその枠を直す板）になる＝見た目は同じ（9/29 Naoto「全体に編集モード」）
-  function listChip(n, me, date, slot, k) {
+  // 🔒確定の札は灰色で薄く・未定は目立たせる（9/29 Naoto「確定した人がグレーアウトして、未定のところが目立つように」）＝管理者の画面だけ
+  //   （確定の有無は管理者にしか返らない。未定の強調も組む人のためのもの）
+  function lockOf(r, i) { return !!(isAdmin() && r.locked && r.locked[i]); }
+  function listChip(n, me, date, slot, k, locked) {
     var ed = k != null;
-    var open = ed ? '<button type="button" data-edit-date="' + date + '" data-edit-slot="' + k + '" class="lc is-edit' : '<span class="lc';
+    var extra = (locked ? ' is-locked' : '') + (!n && isAdmin() ? ' is-todo' : '');
+    var open = (ed ? '<button type="button" data-edit-date="' + date + '" data-edit-slot="' + k + '" class="lc is-edit' : '<span class="lc') + extra;
     var close = ed ? '</button>' : '</span>';
     if (!n) return open + ' is-empty">未定' + close;
     if (n === '空き') return open + ' is-solo">1人配信' + close;
@@ -202,15 +206,15 @@ var SHIFT = (function () {
           return '<div class="dl-row is-editing' + (r.date === today ? ' is-today' : '') + (open ? ' is-open' : '') + '">' +
             '<button type="button" class="dl-date dl-open" data-open-date="' + r.date + '" aria-expanded="' + open + '"><span class="dl-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span><span class="dl-w ' + dayClass(r.date) + '">' + u.DOW[dw] + '</span>' +
             (r.grade ? gradeBadge(r.grade) : '') + '</button>' +
-            '<span class="dl-slot dl-day">' + listChip(r.day[0], me, r.date, '昼', K(0)) + listChip(r.day[1], me, r.date, '昼', K(1)) + '</span>' +
-            '<span class="dl-slot dl-night">' + listChip(r.night[0], me, r.date, '夜', K(2)) + listChip(r.night[1], me, r.date, '夜', K(3)) + '</span>' +
+            '<span class="dl-slot dl-day">' + listChip(r.day[0], me, r.date, '昼', K(0), lockOf(r, 0)) + listChip(r.day[1], me, r.date, '昼', K(1), lockOf(r, 1)) + '</span>' +
+            '<span class="dl-slot dl-night">' + listChip(r.night[0], me, r.date, '夜', K(2), lockOf(r, 2)) + listChip(r.night[1], me, r.date, '夜', K(3), lockOf(r, 3)) + '</span>' +
             '</div>' + (open ? detail(r, me, today) : '');
         }
         return '<button type="button" class="dl-row' + (r.date === today ? ' is-today' : '') + (open ? ' is-open' : '') + '" data-date="' + r.date + '" aria-expanded="' + open + '">' +
           '<span class="dl-date"><span class="dl-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span><span class="dl-w ' + dayClass(r.date) + '">' + u.DOW[dw] + '</span>' +
           (r.grade ? gradeBadge(r.grade) : '') + '</span>' +
-          '<span class="dl-slot dl-day">' + listChip(r.day[0], me, r.date, '昼') + listChip(r.day[1], me, r.date, '昼') + '</span>' +
-          '<span class="dl-slot dl-night">' + listChip(r.night[0], me, r.date, '夜') + listChip(r.night[1], me, r.date, '夜') + '</span>' +
+          '<span class="dl-slot dl-day">' + listChip(r.day[0], me, r.date, '昼', null, lockOf(r, 0)) + listChip(r.day[1], me, r.date, '昼', null, lockOf(r, 1)) + '</span>' +
+          '<span class="dl-slot dl-night">' + listChip(r.night[0], me, r.date, '夜', null, lockOf(r, 2)) + listChip(r.night[1], me, r.date, '夜', null, lockOf(r, 3)) + '</span>' +
           '</button>' + (open ? detail(r, me, today) : '');
       }).join('') + '</div>';
   }
