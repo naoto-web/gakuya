@@ -103,6 +103,15 @@ var SHIFT = (function () {
     var faint = 'color-mix(in srgb, ' + c + ' 22%, #ffffff)';
     return ' style="background:linear-gradient(90deg,' + (ngL ? faint : c) + ' 0 50%,' + (ngR ? faint : c) + ' 50% 100%);color:#23252a"';
   }
+  // カレンダーのマスの中の相方の札＝薄く（9/29 Naoto「相方の名前バッジは薄く」）＝メンバーカラー18%の地＋色の枠＋黒系の字。
+  //   半休＝出られる側だけ30%・出られない側は白地に斜線（util.slotHalfBg）
+  function pcStyle(name, date, slot) {
+    var c = colorOf(name);
+    if (!c) return '';
+    var ng = st.data && st.data.half && st.data.half[date] && st.data.half[date][name];
+    var hb = u.slotHalfBg(ng, slot, 'color-mix(in srgb, ' + c + ' 30%, #ffffff)', '');
+    return ' style="background:' + (hb || 'color-mix(in srgb, ' + c + ' 18%, #ffffff)') + ';color:#23252a;box-shadow:inset 0 0 0 1px ' + c + '"';
+  }
   function colorStyle(name) {
     var c = colorOf(name);
     return c ? ' style="background:' + c + ';color:' + inkOn(c) + '"' : '';
@@ -139,7 +148,7 @@ var SHIFT = (function () {
     if (me) {
       if (!slot) return '';
       var p = partnerOf(r, me, slot);
-      return '<span class="pc ' + (p.cls || '') + '"' + (p.name ? paintStyle(p.name, r.date, slot) : '') + '>' + u.esc(p.label) + '</span>';
+      return '<span class="pc ' + (p.cls || '') + '"' + (p.name ? pcStyle(p.name, r.date, slot) : '') + '>' + u.esc(p.label) + '</span>';
     }
     if (isAdmin()) return quad(r);  // 管理者で強調なし＝その日の4人を頭文字で
     var open = r.day.concat(r.night).filter(function (x) { return x === ''; }).length;
