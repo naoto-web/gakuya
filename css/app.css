@@ -876,3 +876,11 @@ button.lc:active { filter: brightness(.93); }
 /* 🔒確定＝灰色で薄く／未定＝ピンク地＋赤い点線で目立たせる（9/29 Naoto・管理者の画面だけ）。ピンクはシートの空欄の色と同じ */
 .lc.is-locked, .name.is-locked { filter: grayscale(1); opacity: .45; }
 .lc.is-todo, .name.is-todo { background: #ffd6e7; border: 1.5px dashed #d0457a; color: #a8214f; font-weight: 700; }
+/* 💡次に決める枠（9/29 Naoto） */
+.sg-bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; background: #fff8e1; border: 1.5px solid #e0b84a; margin-top: -2px; }
+.sg-bar.is-zero { background: var(--ng-soft); border-color: var(--ng); }
+.sg-bar.is-done { font-size: 13px; color: var(--ok); background: #e8f5ec; border-color: #9fd3b1; }
+.sg-main { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 0; font: inherit; font-size: 14px; color: var(--fg); cursor: pointer; display: grid; }
+.sg-main small { font-size: 11px; color: var(--fg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg-bar.is-zero .sg-main small { color: var(--ng); font-weight: 700; }
+.sg-more { flex: none; }
