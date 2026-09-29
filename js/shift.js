@@ -386,7 +386,7 @@ var SHIFT = (function () {
     return '<div class="admin-bar">' +
       (d.published ? '<span class="pill ok">公開中</span>' : '<span class="pill dim">非公開</span>') +
       '<button type="button" class="btn ' + (d.published ? 'ghost' : '') + ' btn-sm" id="pub-ask">' + (d.published ? '非公開に戻す' : '配信者に公開') + '</button>' +
-      (EDIT.can() ? '<button type="button" class="btn ghost btn-sm" id="bulk-menu" aria-label="月まとめての操作（自動入力・並び替え・リセット）">一括▾</button>' : '') +
+      (EDIT.can() && editOn() ? '<button type="button" class="btn ghost btn-sm" id="bulk-menu" aria-label="月まとめての操作（自動入力・並び替え・リセット）">一括▾</button>' : '') +
       '<select id="focus" class="date-input focus-sel" aria-label="強調する人"><option value="">なし</option>' +
       st.me.members.map(function (m) { return '<option value="' + u.esc(m.name) + '"' + (m.name === st.focus ? ' selected' : '') + '>' + u.esc(m.name) + '</option>'; }).join('') +
       '</select></div>';
