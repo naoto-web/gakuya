@@ -146,9 +146,11 @@ var SHIFT = (function () {
   // マスの下半分。自分の出勤日＝相方の名前（メンバーカラー）／管理者で強調なし＝未定の数
   function cellBody(r, me, slot) {
     if (me) {
-      if (!slot) return '';
+      // 撮影の日＝紫の「撮影」バッジ（9/30 Naoto）。出どころ＝休み希望の「撮影」（配信者は本人の分・管理者は強調中の人）
+      var shoot = /撮影/.test(wishFor(r.date, me)) ? '<span class="sb-shoot">撮影</span>' : '';
+      if (!slot) return shoot;
       var p = partnerOf(r, me, slot);
-      return '<span class="pc ' + (p.cls || '') + '"' + (p.name ? pcStyle(p.name, r.date, slot) : '') + '>' + u.esc(p.label) + '</span>';
+      return '<span class="pc ' + (p.cls || '') + '"' + (p.name ? pcStyle(p.name, r.date, slot) : '') + '>' + u.esc(p.label) + '</span>' + shoot;
     }
     if (isAdmin()) return quad(r);  // 管理者で強調なし＝その日の4人を頭文字で
     var open = r.day.concat(r.night).filter(function (x) { return x === ''; }).length;
