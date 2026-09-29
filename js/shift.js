@@ -112,7 +112,7 @@ var SHIFT = (function () {
   function chip(name, me, locked, edit, paint) {
     var tag = edit ? 'button type="button" data-edit-date="' + edit.date + '" data-edit-slot="' + edit.slot + '"' : 'span';
     var end = edit ? '</button>' : '</span>';
-    var ed = (edit ? ' is-edit' : '') + (locked && isAdmin() ? ' is-locked' : '') + (!name && isAdmin() ? ' is-todo' : '');
+    var ed = (edit ? ' is-edit' : '') + (locked && editOn() ? ' is-locked' : '') + (!name && editOn() ? ' is-todo' : '');
     if (!name) return '<' + tag + ' class="name is-empty' + ed + '">未定' + end;
     if (name === '空き') return '<' + tag + ' class="name is-solo' + ed + '">' + (locked ? '🔒' : '') + '1人配信' + end;  // 「空き」＝その枠は1人配信（9/29 Naoto「もっと一人配信って分かるように」）
     return '<' + tag + ' class="name mc' + (name === me ? ' is-me' : '') + ed + '"' + (paint || colorStyle(name)) + '>' + (locked ? '<span class="lock" aria-label="確定">🔒</span>' : '') + u.esc(name) + end;
@@ -178,10 +178,12 @@ var SHIFT = (function () {
   // k＝枠の番号（0〜3）を渡すと編集モードの札（押すとその枠を直す板）になる＝見た目は同じ（9/29 Naoto「全体に編集モード」）
   // 🔒確定の札は灰色で薄く・未定は目立たせる（9/29 Naoto「確定した人がグレーアウトして、未定のところが目立つように」）＝管理者の画面だけ
   //   （確定の有無は管理者にしか返らない。未定の強調も組む人のためのもの）
-  function lockOf(r, i) { return !!(isAdmin() && r.locked && r.locked[i]); }
+  //   🔄同日「編集モードを外してもグレーのまま」＝全体の［✎編集］がオンのときだけ（editOn）
+  function editOn() { return !!(isAdmin() && st.editAll); }
+  function lockOf(r, i) { return !!(editOn() && r.locked && r.locked[i]); }
   function listChip(n, me, date, slot, k, locked) {
     var ed = k != null;
-    var extra = (locked ? ' is-locked' : '') + (!n && isAdmin() ? ' is-todo' : '');
+    var extra = (locked ? ' is-locked' : '') + (!n && editOn() ? ' is-todo' : '');
     var open = (ed ? '<button type="button" data-edit-date="' + date + '" data-edit-slot="' + k + '" class="lc is-edit' : '<span class="lc') + extra;
     var close = ed ? '</button>' : '</span>';
     if (!n) return open + ' is-empty">未定' + close;
@@ -246,7 +248,7 @@ var SHIFT = (function () {
         return '<div class="cnt-row' + st2 + (m.name === me ? ' is-me' : '') + '">' +
           '<span class="wa-who" style="--mc:' + (m.color || '#9aa0aa') + '">' + u.esc(m.name) + '</span>' +
           '<span class="cnt-n"><b class="num">' + x.days + '</b>' + (lim ? '<small>/' + lim + '</small>' : '') + '日' + (st2 === ' is-full' ? '<i>上限</i>' : st2 ? '<i>超え</i>' : '') + '</span>' +
-          '<span class="cnt-split"><span class="lg lg-day">昼</span>' + x.day + '<span class="lg lg-night">夜</span>' + x.night + '</span></div>';
+          '<span class="cnt-split"><span class="lg lg-day">昼</span><span class="cnt-v">' + x.day + '</span><span class="lg lg-night">夜</span><span class="cnt-v">' + x.night + '</span></span></div>';
       }).join('') + '</div>' +
       '<div class="cnt-foot">未定 <b class="num">' + open + '</b>枠・1人配信 <b class="num">' + solo + '</b>枠</div></div>';
   }
@@ -385,8 +387,8 @@ var SHIFT = (function () {
       (d.published ? '<span class="pill ok">公開中</span>' : '<span class="pill dim">非公開</span>') +
       '<button type="button" class="btn ' + (d.published ? 'ghost' : '') + ' btn-sm" id="pub-ask">' + (d.published ? '非公開に戻す' : '配信者に公開') + '</button>' +
       (EDIT.can() ? '<button type="button" class="btn ghost btn-sm" id="bulk-menu" aria-label="月まとめての操作（自動入力・並び替え・リセット）">一括▾</button>' : '') +
-      '<select id="focus" class="date-input focus-sel" aria-label="強調する人"><option value="">強調：なし</option>' +
-      st.me.members.map(function (m) { return '<option value="' + u.esc(m.name) + '"' + (m.name === st.focus ? ' selected' : '') + '>強調：' + u.esc(m.name) + '</option>'; }).join('') +
+      '<select id="focus" class="date-input focus-sel" aria-label="強調する人"><option value="">なし</option>' +
+      st.me.members.map(function (m) { return '<option value="' + u.esc(m.name) + '"' + (m.name === st.focus ? ' selected' : '') + '>' + u.esc(m.name) + '</option>'; }).join('') +
       '</select></div>';
   }
 
@@ -433,7 +435,7 @@ var SHIFT = (function () {
       }).join('') + '</div>' +
       (isAdmin() ? publishBar(d) : '') +
       // 💡次に決める枠（管理者の編集中だけ・1行）
-      (EDIT.can() && EDIT.suggestBar && !st.confirm ? EDIT.suggestBar() : '') +
+      (EDIT.can() && editOn() && EDIT.suggestBar && !st.confirm ? EDIT.suggestBar() : '') +
       // 選んだ日の枠＝見ている人（管理者は強調中の人）のメンバーカラー（9/29 Naoto）
       // 全体＝1日1行の縦一覧（9/29 Naoto「全体のカレンダーは縦一列で1日一行」）／個人＝月カレンダー＋下に詳細
       (all ? dayList(rows, me, today) + (isAdmin() ? countTable(rows, me) : '') :
