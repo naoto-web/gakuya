@@ -896,3 +896,5 @@ button.lc:active { filter: brightness(.93); }
 .qi.is-solo { border-color: #5a5f69; background: #eceef1; color: #4a4f58; }
 .qi.is-todo { background: #ffd6e7; border-color: #d0457a; color: #a8214f; }
 .qi.is-locked { filter: grayscale(1); opacity: .45; }
+/* 区分ごとに1行（9/29 Naoto）＝行の間は詰める */
+.venues + .venues { margin-top: -2px; }
