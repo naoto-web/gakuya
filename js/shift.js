@@ -336,9 +336,19 @@ var SHIFT = (function () {
     return (d.myWish || {})[date] || '';
   }
   function halfCell(date, me, slot) {
-    if (!slot || slot === '通し') return '';
+    if (!slot) return '';
     var i = u.wishInfo(wishFor(date, me));
     if (!i || i.k !== 'half' || !i.ng) return '';
+    // 通しの日＋半休（9/30 Naoto「上の左側は半休なので薄く」）＝上の段（昼）・下の段（夜）それぞれ左右で出られない側を白地に斜線
+    //   段の境目は CSS の .is-mine-both と同じ（下から26px・藍の細線）
+    if (slot === '通し') {
+      var ng = function (q) { return i.ng.indexOf(q) >= 0; };
+      var band = function (a, b, c) { return 'linear-gradient(90deg,' + (ng(a) ? 'transparent' : c) + ' 0 50%,' + (ng(b) ? 'transparent' : c) + ' 50% 100%)'; };
+      if (![0, 1, 2, 3].some(ng)) return '';
+      return ' style="background-color:#ffffff;background-image:linear-gradient(#8f98d8,#8f98d8),' + band(0, 1, CELL_BG['昼']) + ',' + band(2, 3, CELL_BG['夜']) + ',' +
+        'repeating-linear-gradient(135deg,#ffffff 0 4px,#e9e7e1 4px 6px);' +
+        'background-size:100% 1px,100% calc(100% - 26px),100% 26px,auto;background-position:0 calc(100% - 26px),0 0,0 100%,0 0;background-repeat:no-repeat,no-repeat,no-repeat,repeat"';
+    }
     var qs = slot === '昼' ? [0, 1] : [2, 3];
     var ngL = i.ng.indexOf(qs[0]) >= 0, ngR = i.ng.indexOf(qs[1]) >= 0;
     if (!ngL && !ngR) return '';
