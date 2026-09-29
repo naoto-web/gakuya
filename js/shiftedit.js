@@ -166,7 +166,9 @@ var EDIT = (function () {
       '<button type="button" class="btn ghost btn-sm" data-pick="' + AKI + '">1人配信</button>' +
       '<button type="button" class="btn ghost btn-sm" data-pick="">空欄に戻す</button>' +
       (cur ? '<button type="button" class="btn ghost btn-sm" data-lock="' + (locked ? '0' : '1') + '">' + (locked ? '確定を外す' : '🔒確定にする') + '</button>' : '') +
-      '</div>';
+      '</div>' +
+      // 枠を組んでいる途中で休み・半休を付けたい（9/29 Naoto「休み希望は出てないけど、編集で休みとか半休とかできるようにしたい」）
+      '<button type="button" class="btn ghost btn-sm" id="to-wish">📝この日の休み希望を直す</button>';
     open(html, function (el) {
       el.querySelectorAll('[data-pick]').forEach(function (b) {
         b.addEventListener('click', function () {
@@ -181,6 +183,8 @@ var EDIT = (function () {
           setSlot(date, s, v);
         });
       });
+      var tw = el.querySelector('#to-wish');
+      if (tw) tw.addEventListener('click', function () { openWish(date, { back: function () { openSlot(date, s); } }); });
       var lk = el.querySelector('[data-lock]');
       if (lk) lk.addEventListener('click', function () { lockSlots(date, [s], lk.dataset.lock === '1'); });
     });
@@ -219,6 +223,11 @@ var EDIT = (function () {
     var w = d.edit.wish[date] = d.edit.wish[date] || {};
     if (value) w[name] = value; else delete w[name];
     if (!Object.keys(w).length) delete d.edit.wish[date];
+    // 半休の札の半分塗り（GASの half）も押した瞬間に直す＝保存を待たずに見た目が変わる（9/29 Naoto）
+    var hi = u.wishInfo(value);
+    d.half = d.half || {};
+    var h = d.half[date] = d.half[date] || {};
+    if (hi && hi.k === 'half' && hi.ng && hi.ng.length) h[name] = hi.ng; else delete h[name];
     var ym = d.ym;
     enqueue(function () { return API.setWish(ym, date, name, value, expect); }, name + 'の休み希望');
   }
@@ -244,7 +253,8 @@ var EDIT = (function () {
               return '<button type="button" class="q-btn q-' + i + '" data-q="' + i + '" aria-pressed="' + (pick.indexOf(i) >= 0) + '">' + q + '</button>';
             }).join('') + '</span><button type="button" class="btn btn-sm" data-half-save="' + u.esc(m.name) + '">保存</button></div>' : '') + '</div>';
         }).join('') + '</div>' +
-        (opt && opt.toShift ? '<button type="button" class="btn ghost" id="we-shift">この日のシフトを開く</button>' : '');
+        (opt && opt.toShift ? '<button type="button" class="btn ghost" id="we-shift">この日のシフトを開く</button>' : '') +
+        (opt && opt.back ? '<button type="button" class="btn" id="we-back">枠の候補に戻る</button>' : '');
     }
     open(body(), function bindAll(el) {
       var redraw = function () { el.innerHTML = body(); bindAll(el); };
@@ -273,6 +283,8 @@ var EDIT = (function () {
         setWish(date, hs.dataset.halfSave, pick.length === 4 ? '休' : u.wishText(pick));
         editing = ''; redraw();
       });
+      var wb = el.querySelector('#we-back');
+      if (wb) wb.addEventListener('click', function () { opt.back(); });
       var ts = el.querySelector('#we-shift');
       if (ts) ts.addEventListener('click', function () { close(); opt.toShift(); });
     });
