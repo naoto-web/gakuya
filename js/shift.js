@@ -31,7 +31,6 @@ var SHIFT = (function () {
     mem[d.ym] = { d: d, at: at };
     try {
       localStorage.setItem(LS + who() + ':' + d.ym, JSON.stringify({ d: d, at: at.getTime() }));
-      localStorage.setItem(LS + who() + ':last', d.ym);
     } catch (e) { /* 端末に置けなくてもメモリの控えは効く */ }
   }
   function readCache(ym) {
@@ -44,8 +43,11 @@ var SHIFT = (function () {
     } catch (e) { /* 壊れた控えは無視 */ }
     return null;
   }
+  // 🔑最後に表示した月＝apply のときだけ覚える（9/29 Naoto「10月を操作してて更新したら9月に戻る」＝
+  //   以前は控えを置くたびに覚えていたので、裏の先読みで別の月に上書きされ、開き直しはGASの既定＝今月を読んでいた）
   function apply(d, at) {
     st.data = d; st.ym = d.ym; st.fetchedAt = at; st.confirm = false;
+    try { localStorage.setItem(LS + who() + ':last', d.ym); } catch (e) { /* 覚えられなくても表示はできる */ }
     if (!st.sel || u.ymOf(st.sel) !== d.ym) st.sel = d.ym && d.today && u.ymOf(d.today) === d.ym ? d.today : (d.rows[0] && d.rows[0].date);
   }
   var prefetched = false;
@@ -507,7 +509,14 @@ var SHIFT = (function () {
   });
 
   return {
-    init: function (me) { st.me = me; return load(null); },
+    // 開いたら最後に見ていた月から。その月が無くなっていたら（非公開に戻った等）GASの既定の月へ
+    init: function (me) {
+      st.me = me;
+      var last = null;
+      try { last = localStorage.getItem(LS + who() + ':last'); } catch (e) { last = null; }
+      if (!last) return load(null);
+      return load(last).then(function () { if (!st.data || st.ym !== last) { st.err = ''; return load(null); } });
+    },
     // 🔑読み込みの完了は別のタブを開いている最中に来ることがある＝表示中のタブだけ描く
     //   （管理者の休み希望タブはシフトと同じデータを使う＝wishadmin.js）
     render: function () {
