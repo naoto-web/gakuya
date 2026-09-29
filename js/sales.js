@@ -9,6 +9,10 @@ var SALES = (function () {
   // 列＝GASの SALES_COLS と同じ並び
   var C = { who: 0, day: 1, slot: 2, waku: 3, place: 4, races: 5, g: 6, title: 7, n: 8, gross: 9, tip: 10, fee: 11 };
   var WAKU = { 'モ': 'モーニング', 'デ': 'デイ', 'ナ': 'ナイター', 'ミ': 'ミッド' };
+  var KC = { 'モ': 'kc-morning', 'デ': 'kc-day', 'ナ': 'kc-night', 'ミ': 'kc-mid' };
+  var RANK = { 'モ': 0, 'デ': 1, 'ナ': 2, 'ミ': 3 };
+  // 区分が分からない記事＝昼はデイの後ろ・夜はミッドの後ろ
+  function wakuRank(r) { return r[C.waku] in RANK ? RANK[r[C.waku]] : r[C.slot] === '昼' ? 1.5 : 3.5; }
 
   function members() { return (SHIFT.state().members || []); }
   function colorOf(n) { var m = members().filter(function (x) { return x.name === n; })[0]; return (m && m.color) || '#9aa0aa'; }
@@ -179,11 +183,14 @@ var SALES = (function () {
       '<div class="card ch-card"><div class="ch-title">1出勤あたりの売上<small>昼・夜</small></div><div id="ch-per">' + (st.all ? '' : '<p class="sub">読み込み中…</p>') + '</div></div>' +
       '<div class="card s-arts">' + (days.length ? days.map(function (day) {
         var date = dateOf(st.ym, day);
-        var rs = byDay[day].sort(function (a, b) { return (a[C.slot] === b[C.slot] ? 0 : a[C.slot] === '昼' ? -1 : 1) || b[C.gross] - a[C.gross]; });
+        // 並び＝発走が早い順（9/30 Naoto）＝モーニング→デイ→ナイター→ミッド。同じ区分の中は場の名前順（シフトの詳細と同じ）
+        var rs = byDay[day].sort(function (a, b) { return (wakuRank(a) - wakuRank(b)) || (a[C.place] < b[C.place] ? -1 : a[C.place] > b[C.place] ? 1 : 0) || b[C.gross] - a[C.gross]; });
         var dayTot = rs.reduce(function (a, r) { return a + r[C.gross] + r[C.tip]; }, 0);
         return '<div class="s-day"><div class="s-day-head"><b class="' + dayClass(date) + '">' + u.md(date) + '</b><span class="num">' + yen(dayTot) + '</span></div>' +
           rs.map(function (r) {
-            return '<div class="s-art"><span class="lg ' + (r[C.slot] === '昼' ? 'lg-day' : 'lg-night') + '">' + (WAKU[r[C.waku]] ? r[C.waku] : r[C.slot]) + '</span>' +
+            // 札＝開催区分の色（シフトの詳細の場の札と同じ・9/30 Naoto「バッジは色分け」）。区分が分からない記事だけ昼・夜の札
+            return '<div class="s-art">' + (KC[r[C.waku]] ? '<span class="kb ' + KC[r[C.waku]] + '" title="' + WAKU[r[C.waku]] + '">' + r[C.waku] + '</span>'
+              : '<span class="lg ' + (r[C.slot] === '昼' ? 'lg-day' : 'lg-night') + '">' + r[C.slot] + '</span>') +
               '<span class="s-art-t"><b>' + u.esc(r[C.place] || '—') + (r[C.g] ? ' <i class="gb ' + (r[C.slot] === '夜' ? 'gb-night' : 'gb-day') + '">G</i>' : '') + ' <small>' + u.esc(String(r[C.races] || '')) + 'R</small></b>' +
               '<small class="s-art-full">' + u.esc(r[C.title]) + '</small></span>' +
               '<span class="s-art-n num">' + r[C.n] + '件</span><span class="s-art-v num">' + u.yen(r[C.gross] + r[C.tip]) + (r[C.tip] ? '<small>チップ' + u.yen(r[C.tip]) + '</small>' : '') + '</span></div>';
