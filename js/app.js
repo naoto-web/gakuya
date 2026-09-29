@@ -80,15 +80,31 @@ var APP = (function () {
     });
   }
 
+  // 🐢9/29 夜：Google側の遅れで最初の読み込み（me）に30秒以上かかることがある
+  //   → 前回の me を端末に控えておき、開いた瞬間はそれで画面を出す。裏で最新を読み、届いたら差し替える
+  //     （鍵の頭6文字＋プレビューの人ごと。鍵が無効になっていれば最新の読み込みで鍵の画面に切り替わる）
+  var ME_LS = 'gakuya:me:' + (CONFIG.KEY || '').slice(0, 6) + ':' + (CONFIG.AS || '');
+  function start(m) {
+    me = m;
+    renderWho(m);
+    render();
+    SHIFT.init(m);
+  }
   function boot() {
     KEYGATE.bind();
     if (!CONFIG.KEY) { KEYGATE.show(''); document.getElementById('view').innerHTML = ''; return; }
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(ME_LS) || 'null'); } catch (e) { cached = null; }
+    // 🔑一呼吸おく：boot() は APP を組み立てている最中に呼ばれる＝ここで同期的に描くと APP.current() がまだ無い
+    if (cached && cached.ok) setTimeout(function () { if (!me) start(cached); }, 0);
     API.me().then(function (m) {
-      me = m;
+      try { localStorage.setItem(ME_LS, JSON.stringify(m)); } catch (e) { /* 控えられなくても動く */ }
+      if (!me) { start(m); return; }
+      me = m;                 // 控えで出していた＝名前の札とメンバー（色・並び・上限）だけ差し替える
       renderWho(m);
-      render();
-      SHIFT.init(m);
+      SHIFT.setMe(m);
     }).catch(function (e) {
+      if (me && e.code !== 'key' && e.code !== 'as') return;  // 控えで動いている間の通信の失敗は黙って続ける
       if (e.code === 'as') { setAs(''); return; }  // 覚えていた配信者が設定シートから消えた＝管理者に戻す
       if (e.code === 'key') { KEYGATE.show('このリンクは使えなくなっています。管理者に新しいリンクをもらってください。'); document.getElementById('view').innerHTML = ''; return; }
       document.getElementById('view').innerHTML = '<div class="card"><p>つながりませんでした。電波のよいところで開き直してください。</p><button type="button" class="btn" onclick="location.reload()">開き直す</button></div>';
