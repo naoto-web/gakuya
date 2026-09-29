@@ -16,11 +16,41 @@ var API = (function () {
   }
 
   // 読み取り。GASはリダイレクトを返すので fetch の既定（follow）に任せる
+  //   🐢9/29 夕方：同じ呼び出しでも1秒のときと60秒超のときがバラバラに出た（シートを読まない呼び出しでも＝Google側の受け付けの遅れ）。
+  //   ときどきHTMLのエラー（ドライブの「ページが見つかりません」）も返る。
+  //   → 12秒たっても返らなければ同じ読み込みをもう1本送り、先に返った方を使う（読み取りだけ。保存は二重に送らない）
+  //   → JSONでない返事（HTMLのエラー）は失敗として扱い、もう1本の方を待つ
+  var HEDGE_MS = 12000;
+  function once(url) {
+    return fetch(url, { method: 'GET', cache: 'no-store' })
+      .then(function (r) { return r.text(); })
+      .then(function (t) {
+        var j;
+        try { j = JSON.parse(t); } catch (e) { var err = new Error('not json'); err.code = 'net'; throw err; }
+        return j;
+      });
+  }
   function get(app, params) {
-    var p = Object.assign({}, params || {}, { app: app, k: CONFIG.KEY, as: CONFIG.AS, cb: Date.now() });
-    return fetch(CONFIG.GAS_URL + '?' + qs(p), { method: 'GET', cache: 'no-store' })
-      .then(function (r) { return r.json(); })
-      .then(check);
+    var p = Object.assign({}, params || {}, { app: app, k: CONFIG.KEY, as: CONFIG.AS });
+    var base = CONFIG.GAS_URL + '?' + qs(p) + '&cb=';
+    return new Promise(function (resolve, reject) {
+      var done = false, fails = 0, started = 0, lastErr = null, timer = null;
+      function fire() {
+        started++;
+        once(base + Date.now() + '-' + started).then(function (j) {
+          if (done) return;
+          done = true; clearTimeout(timer);
+          try { resolve(check(j)); } catch (e) { reject(e); }   // GASが ok:false を返したらそのまま失敗（やり直さない）
+        }).catch(function (e) {
+          if (done) return;
+          fails++; lastErr = e;
+          if (started < 2) { clearTimeout(timer); fire(); }      // 1本目がすぐ失敗＝すぐ2本目
+          else if (fails >= started) { done = true; reject(lastErr); }
+        });
+      }
+      fire();
+      timer = setTimeout(function () { if (!done && started < 2) fire(); }, HEDGE_MS);
+    });
   }
 
   // 書き込み。プリフライトを避けるため text/plain で送る
