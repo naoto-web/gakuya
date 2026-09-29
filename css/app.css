@@ -873,3 +873,6 @@ button.lc:active { filter: brightness(.93); }
 .cnt-split { justify-self: end; display: inline-flex; align-items: center; gap: 3px; color: var(--fg-dim); font-variant-numeric: tabular-nums; }
 .cnt-split .lg { font-size: 10px; padding: 0 4px; margin-left: 4px; }
 .cnt-foot { font-size: 12px; color: var(--fg-dim); border-top: 1px solid var(--line); padding-top: 6px; }
+/* 🔒確定＝灰色で薄く／未定＝ピンク地＋赤い点線で目立たせる（9/29 Naoto・管理者の画面だけ）。ピンクはシートの空欄の色と同じ */
+.lc.is-locked, .name.is-locked { filter: grayscale(1); opacity: .45; }
+.lc.is-todo, .name.is-todo { background: #ffd6e7; border: 1.5px dashed #d0457a; color: #a8214f; font-weight: 700; }
