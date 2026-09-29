@@ -44,12 +44,17 @@ var CHART = (function () {
     }
     function hide() { tip.hidden = true; hits.forEach(function (h) { h.classList.remove('is-on'); }); }
     hits.forEach(function (h) {
-      h.addEventListener('pointerenter', function () { show(h); });
-      h.addEventListener('click', function () { show(h); });
-      h.addEventListener('focus', function () { show(h); });
+      h.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') show(h); });
+      // 🔄9/30 Naoto「一度出た詳細はどうやったら閉じられる？」＝同じ棒をもう一度押すと閉じる（スマホ）
+      h.addEventListener('click', function () { if (!tip.hidden && h.classList.contains('is-on')) hide(); else show(h); });
     });
     box.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hide(); });
+    box._hide = hide;
   }
+  // グラフの外を押したら、出ている吹き出しを全部閉じる
+  document.addEventListener('pointerdown', function (e) {
+    document.querySelectorAll('.ch-box').forEach(function (b) { if (b._hide && !b.contains(e.target)) b._hide(); });
+  });
 
   // cols＝[{ label, tick（目盛りの字・空なら出さない）, segs:[{ v, color }], tip（吹き出しのHTML）, mark（印の色） }]
   function columns(el, cols, opt) {
