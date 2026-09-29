@@ -172,6 +172,21 @@ var SHIFT = (function () {
     }
     return '<span class="qd">' + one(r.day[0], 0, '昼') + one(r.day[1], 1, '昼') + one(r.night[0], 2, '夜') + one(r.night[1], 3, '夜') + '</span>';
   }
+  // 強調なしの撮影の印（9/30 Naoto「強調なしでも撮影の日に印」）＝日付の横に紫の「撮」1文字
+  //   マスの下半分は4人の頭文字で埋まっているので、上の行（日付とグレード札の間）に置く＝マスの高さを変えない
+  //   頭文字まで入れるとグレード札を押し出すので、誰が撮影かは日付を押した詳細に出す（shootLine）
+  function shooters(date) {
+    var w = (((st.data.edit || {}).wish || {})[date]) || {};
+    return (st.me.members || []).map(function (m) { return m.name; }).filter(function (n) { return /撮影/.test(w[n] || ''); });
+  }
+  function shootMark(r) {
+    var names = shooters(r.date);
+    return names.length ? '<span class="sb-shoot sb-q" title="撮影：' + names.map(u.esc).join('・') + '">撮</span>' : '';
+  }
+  function shootLine(date) {
+    var names = shooters(date);
+    return names.length ? '<div class="shoot-line"><span class="sb-shoot">撮影</span>' + names.map(u.esc).join('・') + '</div>' : '';
+  }
 
   // グレードの札：昼開催＝「昼G」（金地）／夜開催＝「夜G」（紺地に金字）（9/29 Naoto「夜グレードと昼グレードが分かりづらい」）
   function gradeBadge(g) {
@@ -337,6 +352,7 @@ var SHIFT = (function () {
         r.date === today ? 'is-today' : '', r.date === st.sel ? 'is-sel' : ''].join(' ');
       h += '<button type="button" class="' + cls + '"' + halfCell(r.date, me, slot) + ' data-date="' + r.date + '" aria-pressed="' + (r.date === st.sel) + '" aria-label="' + u.md(r.date) + (slot ? '・' + slot + 'の出番' : '') + (r.grade ? '・' + u.esc(r.grade.name) : '') + '">' +
         '<span class="scal-top"><span class="scal-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span>' +
+        (!me && !all && isAdmin() ? shootMark(r) : '') +
         // グレードの札は「本人がその日その時間帯に出る」ときだけ（夜に出る日の昼Gは出さない・9/29 Naoto）。
         //   管理者で誰も強調していないときは全部出す（全体を見る画面なので）
         (me && !all ? (slot && r.grade && r.grade.slot === slot ? gradeBadge(r.grade) : '') : gradeBadge(r.grade)) + '</span>' +
@@ -381,7 +397,8 @@ var SHIFT = (function () {
   function detail(r, me, today) {
     var lk = r.locked || [false, false, false, false];
     var ed = EDIT.can();
-    var e = function (s) { return ed ? { date: r.date, slot: s } : null; };
+    // 名前の札から枠を直せるのは［✎編集］がオンのときだけ（9/30 Naoto＝見ているだけのときの押し間違いでシートを書き換えない）
+    var e = function (s) { return ed && editOn() ? { date: r.date, slot: s } : null; };
     var vals = r.day.concat(r.night);
     var allLocked = vals.every(function (v, i) { return v === '' || lk[i]; }) && vals.some(function (v) { return v !== ''; });
     return '<div class="card day-detail">' +
@@ -390,6 +407,8 @@ var SHIFT = (function () {
       (u.holidayOf(r.date) ? '<span class="hol-name">' + u.esc(u.holidayOf(r.date)) + '</span>' : '') + (r.date === today ? ' 今日' : '') + '</strong>' +
       // 右上のグレード表示は消した（下の場の札と情報が重なる・9/29 Naoto）
       '</div>' +
+      // 管理者：その日に撮影の人（マスの「撮」の中身）。編集オンのときは下の休み希望の行に出るので出さない
+      (isAdmin() && !editOn() ? shootLine(r.date) : '') +
       // 昼・夜の札はカレンダーの凡例と同じ「中が薄い」札（9/29 Naoto）
       '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0], e(0), paintStyle(r.day[0], r.date, '昼', me)) + chip(r.day[1], me, lk[1], e(1), paintStyle(r.day[1], r.date, '昼', me)) + '</div>' +
       venues(r.date, '昼') +
