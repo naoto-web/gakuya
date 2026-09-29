@@ -141,8 +141,24 @@ var SHIFT = (function () {
       var p = partnerOf(r, me, slot);
       return '<span class="pc ' + (p.cls || '') + '"' + (p.name ? paintStyle(p.name, r.date, slot) : '') + '>' + u.esc(p.label) + '</span>';
     }
+    if (isAdmin()) return quad(r);  // 管理者で強調なし＝その日の4人を頭文字で
     var open = r.day.concat(r.night).filter(function (x) { return x === ''; }).length;
     return open ? '<span class="sm aki">未定' + open + '</span>' : '';
+  }
+
+  // 管理者の個人カレンダー（強調なし）：上の行＝昼の2人・下の行＝夜の2人を頭の1文字で（9/29 Naoto A案）
+  //   頭文字は6人とも別（名前は設定シートから来る＝コードに書かない）。メンバーカラーの薄い地＋枠（全体の一覧と同じ見た目）
+  //   未定＝「・」（編集オンのときはピンク）／1人配信＝灰色の「—」／半休＝出られる側だけ塗る／編集オンで🔒確定は灰色
+  function quad(r) {
+    function one(n, i, slot) {
+      if (!n) return '<i class="qi is-open' + (editOn() ? ' is-todo' : '') + '">・</i>';
+      if (n === '空き') return '<i class="qi is-solo">—</i>';
+      var c = colorOf(n) || '#9aa0aa';
+      var ng = st.data.half && st.data.half[r.date] && st.data.half[r.date][n];
+      var hb = u.slotHalfBg(ng, slot, 'color-mix(in srgb, ' + c + ' 30%, #ffffff)', '');
+      return '<i class="qi' + (lockOf(r, i) ? ' is-locked' : '') + '" style="--mc:' + c + (hb ? ';background:' + hb : '') + '" title="' + u.esc(n) + '">' + u.esc(Array.from(n)[0]) + '</i>';
+    }
+    return '<span class="qd">' + one(r.day[0], 0, '昼') + one(r.day[1], 1, '昼') + one(r.night[0], 2, '夜') + one(r.night[1], 3, '夜') + '</span>';
   }
 
   // グレードの札：昼開催＝「昼G」（金地）／夜開催＝「夜G」（紺地に金字）（9/29 Naoto「夜グレードと昼グレードが分かりづらい」）
@@ -441,7 +457,7 @@ var SHIFT = (function () {
       (all ? dayList(rows, me, today) + (isAdmin() ? countTable(rows, me) : '') :
       '<div class="card cal-card"' + (me && colorOf(me) ? ' style="--sel:' + colorOf(me) + '"' : '') + '>' + calendar(rows, me, today, false) +
       '<div class="legend">' +
-      (me ? '<span><span class="lg lg-day">昼</span><span class="lg lg-night">夜</span>＝' + (isAdmin() ? 'その人' : '自分') + 'の出番（中は相方）</span>' : '<span><span class="sm aki">未定</span>＝人が入っていない枠</span>') +
+      (me ? '<span><span class="lg lg-day">昼</span><span class="lg lg-night">夜</span>＝' + (isAdmin() ? 'その人' : '自分') + 'の出番（中は相方）</span>' : (isAdmin() ? '<span>マスの中＝上が昼・下が夜の2人（頭文字）・「・」＝未定</span>' : '<span><span class="sm aki">未定</span>＝人が入っていない枠</span>')) +
       '<span><span class="gb gb-day">昼G</span><span class="gb gb-night">夜G</span>＝グレード</span>' +
       // 出勤数は管理者（強調中）だけ。配信者の画面には出さない（9/29 Naoto「23枠/25って表示は消して」）
       (me ? '<span class="legend-count">' + (isAdmin() ? u.esc(me) + ' ' : '') + '<b class="num">' + count + '</b>日/' + rows.length + '日</span>' : '') +
