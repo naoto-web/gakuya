@@ -212,6 +212,16 @@ var SHIFT = (function () {
     var hb = u.slotHalfBg(ng, slot, n === me ? c : 'color-mix(in srgb, ' + c + ' 15%, #ffffff)', n === me ? 'color-mix(in srgb, ' + c + ' 22%, #ffffff)' : '');
     return open + (n === me ? ' is-me' : '') + '" style="--mc:' + c + ';--ink:' + inkOn(c) + (hb ? ';background:' + hb + ';color:#23252a' : '') + '">' + u.esc(n) + close;
   }
+  // 全体の一覧の昼・夜の2人＝メンバーの並び順（GASの APP_ORDER＝9/29 Naoto の指定順）で表示。1人配信→未定は後ろ
+  //   並べ替えは見た目だけ＝編集の札は元の枠（①②）の番号を持ったまま
+  function pairChips(r, slot, me, K) {
+    var base = slot === '昼' ? 0 : 2, pair = slot === '昼' ? r.day : r.night;
+    var names = (st.me.members || []).map(function (m) { return m.name; });
+    var rank = function (n) { if (n === '') return 99; if (n === '空き') return 98; var i = names.indexOf(n); return i < 0 ? 97 : i; };
+    return [0, 1].map(function (j) { return { n: pair[j], k: base + j }; })
+      .sort(function (a, b) { return (rank(a.n) - rank(b.n)) || (a.k - b.k); })
+      .map(function (x) { return listChip(x.n, me, r.date, slot, K ? K(x.k) : null, lockOf(r, x.k)); }).join('');
+  }
   function dayList(rows, me, today) {
     return '<div class="card dl-card"' + (me && colorOf(me) ? ' style="--sel:' + colorOf(me) + '"' : '') + '>' +
       // 管理者だけ：左上に［✎編集］。編集中は名前の札を押すとその枠を直す板・日付を押すと詳細（9/29 Naoto）
@@ -226,15 +236,15 @@ var SHIFT = (function () {
           return '<div class="dl-row is-editing' + (r.date === today ? ' is-today' : '') + (open ? ' is-open' : '') + '">' +
             '<button type="button" class="dl-date dl-open" data-open-date="' + r.date + '" aria-expanded="' + open + '"><span class="dl-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span><span class="dl-w ' + dayClass(r.date) + '">' + u.DOW[dw] + '</span>' +
             (r.grade ? gradeBadge(r.grade) : '') + '</button>' +
-            '<span class="dl-slot dl-day">' + listChip(r.day[0], me, r.date, '昼', K(0), lockOf(r, 0)) + listChip(r.day[1], me, r.date, '昼', K(1), lockOf(r, 1)) + '</span>' +
-            '<span class="dl-slot dl-night">' + listChip(r.night[0], me, r.date, '夜', K(2), lockOf(r, 2)) + listChip(r.night[1], me, r.date, '夜', K(3), lockOf(r, 3)) + '</span>' +
+            '<span class="dl-slot dl-day">' + pairChips(r, '昼', me, K) + '</span>' +
+            '<span class="dl-slot dl-night">' + pairChips(r, '夜', me, K) + '</span>' +
             '</div>' + (open ? detail(r, me, today) : '');
         }
         return '<button type="button" class="dl-row' + (r.date === today ? ' is-today' : '') + (open ? ' is-open' : '') + '" data-date="' + r.date + '" aria-expanded="' + open + '">' +
           '<span class="dl-date"><span class="dl-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span><span class="dl-w ' + dayClass(r.date) + '">' + u.DOW[dw] + '</span>' +
           (r.grade ? gradeBadge(r.grade) : '') + '</span>' +
-          '<span class="dl-slot dl-day">' + listChip(r.day[0], me, r.date, '昼', null, lockOf(r, 0)) + listChip(r.day[1], me, r.date, '昼', null, lockOf(r, 1)) + '</span>' +
-          '<span class="dl-slot dl-night">' + listChip(r.night[0], me, r.date, '夜', null, lockOf(r, 2)) + listChip(r.night[1], me, r.date, '夜', null, lockOf(r, 3)) + '</span>' +
+          '<span class="dl-slot dl-day">' + pairChips(r, '昼', me, null) + '</span>' +
+          '<span class="dl-slot dl-night">' + pairChips(r, '夜', me, null) + '</span>' +
           '</button>' + (open ? detail(r, me, today) : '');
       }).join('') + '</div>';
   }
@@ -336,14 +346,17 @@ var SHIFT = (function () {
     list = list.filter(function (x) { return slot === '昼' ? KUBUN_ORDER[x.k] <= 1 : KUBUN_ORDER[x.k] >= 2; })
       .sort(function (a, b) { return (KUBUN_ORDER[a.k] - KUBUN_ORDER[b.k]) || (a.v < b.v ? -1 : 1); });
     if (!list.length) return '';
-    return '<div class="venues">' + list.map(function (x) {
+    // 🔄9/29 Naoto「モーニング、デイごとに改行、ナイター、ミッドナイトごとに改行」＝区分ごとに1行
+    var rowsK = [];
+    list.forEach(function (x) { var last = rowsK[rowsK.length - 1]; if (last && last[0].k === x.k) last.push(x); else rowsK.push([x]); });
+    return rowsK.map(function (grp) { return '<div class="venues">' + grp.map(function (x) {
       var isG = /^G|^GP/.test(x.g);
       return '<button type="button" class="rb ' + (KUBUN_CLS[x.k] || 'kc-day') + '" data-venue="' + u.esc(x.v) + '" data-date="' + date + '"' +
         ' aria-label="' + u.esc(x.v + ' ' + x.g + ' ' + x.d + '（' + (x.k === '昼間' ? 'デイ' : x.k) + '）') + '">' +
         '<span class="rb-v">' + u.esc(x.v) + '</span>' +
         '<span class="rb-g' + (isG ? ' is-g' : '') + '">' + u.esc(x.g) + '</span>' +
         '<span class="rb-d">' + u.esc(dayMark(x.d)) + '</span></button>';
-    }).join('') + '</div>';
+    }).join('') + '</div>'; }).join('');
   }
   // 札の色の見方（詳細の下に1行）
   function kubunLegend() {
@@ -547,6 +560,8 @@ var SHIFT = (function () {
       else if (APP.current() === 'wish' && window.WISHADMIN && WISHADMIN.can(st.me)) WISHADMIN.render();
     },
     reload: function () { return load(st.ym); },
+    // 最新の me（メンバー・色・並び・上限・月の一覧）が届いたら差し替えて描き直す（app.js が控えで先に開いたとき）
+    setMe: function (m) { st.me = m; SHIFT.render(); },
     // 休み希望タブから使う：今のデータ・月の切り替え・日付を選んだ状態にする
     state: function () { return { data: st.data, loading: st.loading, members: (st.me && st.me.members) || [] }; },
     go: function (ym) { st.sel = null; st.selAll = null; return load(ym); },
