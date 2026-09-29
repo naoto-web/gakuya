@@ -965,3 +965,9 @@ button.lc:active { filter: brightness(.93); }
 .sm-row:last-child { border-bottom: 0; }
 .sm-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
 .sm-head small { color: var(--fg-dim); font-variant-numeric: tabular-nums; }
+
+/* 実績の記事一覧の札＝開催区分の色（シフトの詳細の場の札 .rb と同じ配色・9/30 Naoto「バッジは色分け」） */
+.kb { display: inline-block; text-align: center; font-size: 10px; font-weight: 700; line-height: 1.6; border-radius: 4px;
+  background: color-mix(in srgb, var(--kc) 14%, #ffffff); color: var(--kc); border: 1px solid color-mix(in srgb, var(--kc) 55%, #ffffff); }
+.kb.kc-night { background: #ebe5f6; border-color: #7c7aa6; color: #1f3a68; }
+.kb.kc-mid { background: color-mix(in srgb, #1f3a68 22%, #ffffff); border-color: #2b2f36; color: #2b2f36; }
