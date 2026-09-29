@@ -281,6 +281,7 @@ var EDIT = (function () {
   // ── 月まとめての操作（シートのPCメニューと同じ） ──
   var OPS = [
     { op: 'fillnight', label: '🌙夜枠に一括入力', desc: '選んだ人を、休み希望の日以外の夜枠に全部入れます（空いている枠だけ・先に何日入るかを見せます）', pick: true, dry: true, where: '夜枠' },
+    { op: 'fillday', label: '☀️昼枠に一括入力', desc: '選んだ人を、休み希望の日以外の昼枠に全部入れます（空いている枠だけ・先に何日入るかを見せます）', pick: true, dry: true, where: '昼枠' },
     { op: 'fillgradeday', label: '🏆グレード昼に一括入力', desc: 'メモにグレード名がある昼開催の日の昼枠に、選んだ人を入れます（休み希望の日以外・空いている枠だけ）', pick: true, dry: true, where: 'グレード昼の枠' },
     { op: 'fillgradenight', label: '🏆グレード夜に一括入力', desc: 'メモのグレード名が「夜」で終わる日（夜開催）の夜枠に、選んだ人を入れます（休み希望の日以外・空いている枠だけ）', pick: true, dry: true, where: 'グレード夜の枠' },
     // 9/29 Naoto「一括入力した人をまとめて確定させたい」＝人ごとにまとめて🔒
@@ -323,7 +324,7 @@ var EDIT = (function () {
             H.render();
             var n = x.bulk ? x.bulk.count : 0;
             var DONE = { autofill: n + '枠を埋めました', sort: n + 'か所を入れ替えました', reset: n + '枠を消しました', reset_all: n + '枠を消しました',
-              fillnight: (extra && extra.name) + 'を' + n + '日入れました', fillgradeday: (extra && extra.name) + 'を' + n + '日入れました', fillgradenight: (extra && extra.name) + 'を' + n + '日入れました',
+              fillnight: (extra && extra.name) + 'を' + n + '日入れました', fillday: (extra && extra.name) + 'を' + n + '日入れました', fillgradeday: (extra && extra.name) + 'を' + n + '日入れました', fillgradenight: (extra && extra.name) + 'を' + n + '日入れました',
               lockperson: (extra && extra.name) + 'の' + n + '枠を確定しました', unlockperson: (extra && extra.name) + 'の' + n + '枠の確定を外しました' };
             APP.toast(o.label + '：' + (DONE[o.op] || n + '枠を戻しました'));
           }).catch(function () {
@@ -360,7 +361,7 @@ var EDIT = (function () {
               var line = function (label, a) { return a && a.length ? '<br><small>' + label + '：' + a.join('・') + '日</small>' : ''; };
               ask(o, '<b>' + u.esc(name) + '</b>を' + u.monthLabel(d.ym) + 'の' + o.where + 'に<b>' + r.count + '日</b>入れます。' + (r.grade ? '<br><small>グレード開催：' + (r.grade.length ? r.grade.join('・') + '日' : 'この月にはありません（メモにグレード名がない）') + '</small>' : '') +
                 line('入れない（休み希望）', sk.wish) + line('入れない（もう入っている）', sk.already) +
-                line('入れない（夜が埋まっている）', sk.full) + line('入れない（翌日の昼＝夜明け）', sk.dawn), { name: name });
+                line('入れない（夜が埋まっている）', sk.full) + line('入れない（夜明けになる）', sk.dawn), { name: name });
             }).catch(function () { box.innerHTML = '<p class="danger-note">計算できませんでした。閉じてもう一度お試しください</p>'; });
           });
         });
