@@ -1,6 +1,6 @@
 {
   "name": "俺たちの競輪ライブ",
-  "short_name": "俺たちの競輪ライブ",
+  "short_name": "俺競ライブ",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
