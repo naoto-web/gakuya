@@ -376,7 +376,7 @@ var EDIT = (function () {
               var r = (x.bulk && x.bulk.filled) || { count: 0, skip: {} };
               var sk = r.skip || {};
               var line = function (label, a) { return a && a.length ? '<br><small>' + label + '：' + a.join('・') + '日</small>' : ''; };
-              ask(o, '<b>' + u.esc(name) + '</b>を' + u.monthLabel(d.ym) + 'の' + o.where + 'に<b>' + r.count + '日</b>入れます。' + (r.grade ? '<br><small>グレード開催：' + (r.grade.length ? r.grade.join('・') + '日' : 'この月にはありません（メモにグレード名がない）') + '</small>' : '') +
+              ask(o, '<b>' + u.esc(name) + '</b>を' + u.monthLabel(d.ym) + 'の' + o.where + 'に<b>' + r.count + '日</b>入れます。' + (r.grade ? '<br><small>グレード開催：' + (r.grade.length ? r.grade.join('・') + '日' : 'この月にはありません') + '</small>' : '') +
                 line('入れない（休み希望）', sk.wish) + line('入れない（もう入っている）', sk.already) +
                 line('入れない（夜が埋まっている）', sk.full) + line('入れない（夜明けになる）', sk.dawn), { name: name });
             }).catch(function () { box.innerHTML = '<p class="danger-note">計算できませんでした。閉じてもう一度お試しください</p>'; });
@@ -405,7 +405,7 @@ var EDIT = (function () {
       for (var s = 0; s < 4; s++) {
         if (valOf(r, s) !== '') continue;
         var night = s >= 2;
-        var grade = !!(r.grade && (r.grade.slot === '夜') === night);
+        var grade = [r.grade, r.grade2].some(function (g) { return g && (g.slot === '夜') === night; });   // 10/1 昼夜両方の日は grade2
         var cands = H.members().filter(function (m) { return !reasons(r.date, s, m.name).length; }).map(function (m) { return m.name; });
         out.push({ date: r.date, s: s, cands: cands, grade: grade, rank: grade ? 0 : night ? 1 : 2 });
       }
