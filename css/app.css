@@ -1244,3 +1244,11 @@ html.rc-lock, html.rc-lock body { overflow: hidden; }
 .pr-dline .wa-who { margin-right: 0; font-size: 12px; padding: 0 6px; }
 .pr-br { display: grid; grid-template-columns: 1fr auto 36px; gap: 8px; padding: 3px 0; border-top: 1px dashed var(--line); }
 .pr-br a { color: var(--accent); text-align: right; }
+
+/* ── プッシュ通知（push.js・10/1）＝シフトの上の案内1行／ホームのカード ── */
+.push-bar { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 6px 8px; border: 1px solid var(--btn-line); border-radius: 8px; background: var(--gold-soft); font-size: 12px; }
+.push-bar span { flex: 1; line-height: 1.4; }
+.push-bar .btn { flex: none; }
+.push-bar .link-btn { flex: none; font-size: 16px; padding: 0 4px; color: var(--fg-dim); text-decoration: none; }
+.push-card p { margin: 0 0 8px; font-size: 13px; line-height: 1.6; }
+.push-card .btn { justify-self: start; }
