@@ -1074,6 +1074,9 @@ html.rc-lock, html.rc-lock body { overflow: hidden; }
 .sh-form { gap: 6px; }
 .sh-form .date-input, .sh-req .date-input, .sh-c { width: 100%; box-sizing: border-box; }
 .sh-ta { resize: vertical; min-height: 64px; line-height: 1.5; }
+/* 要望欄の例（うすい字）＝いちばん長い行（24文字）が1行に収まる大きさ（10/1 Naoto「追加で｜も可）で改行される」）
+   入力欄の中の幅＝画面幅−約92px（左右の余白・カードと欄の内側）を24.5文字で割る。上限は14px。入力した字の大きさは変えない */
+#sh-req::placeholder { font-size: min(14px, calc((min(100vw, 480px) - 92px) / 24.5)); letter-spacing: 0; }
 .sh-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .sh-chip { display: inline-flex; }
 .sh-chip input { position: absolute; opacity: 0; pointer-events: none; }
