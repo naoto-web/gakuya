@@ -125,7 +125,7 @@ var SALES = (function () {
 
   function head(d) {
     var months = (st.months || []).slice().reverse();
-    return '<div class="title-row"><h1 class="screen-title">実績</h1><span class="title-aside">' + (st.loading ? '読み込み中…' : d && d.asof ? u.mdShort(d.asof) + 'までのnote' : '') +
+    return '<div class="title-row"><h1 class="screen-title">実績</h1>' + (window.PRESENCE ? PRESENCE.seg() : '') + '<span class="title-aside">' + (st.loading ? '読み込み中…' : d && d.asof ? u.mdShort(d.asof) + 'までのnote' : '') +
       ' <button type="button" class="link-btn" id="s-reload">最新にする</button></span></div>' +
       '<div class="s-pick"><select id="s-ym" class="date-input" aria-label="月">' + months.map(function (m) {
         return '<option value="' + m.ym + '"' + (m.ym === st.ym ? ' selected' : '') + '>' + m.ym.slice(0, 4) + '年' + u.monthLabel(m.ym) + '</option>';
@@ -302,6 +302,7 @@ var SALES = (function () {
 
   function draw() {
     if (APP.current() !== 'stats') return;
+    if (window.PRESENCE && PRESENCE.active()) return;   // 出演を見ている間に売上の読み込みが終わっても上書きしない（10/1）
     var el = document.getElementById('view');
     var d = st.data[st.ym];
     if (st.err === 'notyet') {
