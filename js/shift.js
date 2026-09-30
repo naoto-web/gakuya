@@ -151,7 +151,10 @@ var SHIFT = (function () {
     if (me) {
       // 撮影の日＝紫の「撮影」バッジ（9/30 Naoto）。出どころ＝休み希望の「撮影」（配信者は本人の分・管理者は強調中の人）
       var shoot = /撮影/.test(wishFor(r.date, me)) ? '<span class="sb-shoot">撮影</span>' : '';
-      if (!slot) return shoot;
+      // 🔄10/1 休み希望（休・半）もマスに出す＝出番の無い日（未公開の月・休みを出した日）に「休」「半」
+      var wi = u.wishInfo(wishFor(r.date, me));
+      var wmark = wi && wi.k !== 'shoot' ? '<b class="wm-mark wm-' + wi.k + '">' + (wi.k === 'off' ? '休' : '半') + '</b>' : '';
+      if (!slot) return shoot || wmark;
       // 通し＝相方を上＝昼・下＝夜の2段で（マスも上下で昼の黄／夜の藍・9/30 Naoto「上下2分割」）
       if (slot === '通し') {
         var pd = partnerOf(r, me, '昼'), pn = partnerOf(r, me, '夜');
@@ -436,6 +439,8 @@ var SHIFT = (function () {
       '</div>' +
       // 管理者：その日に撮影の人（マスの「撮」の中身）。編集オンのときは下の休み希望の行に出るので出さない
       (isAdmin() && !editOn() ? shootLine(r.date) : '') +
+      // 配信者の休み希望（10/1）＝日付のすぐ下（場の札の下だとスクロールしないと届かない）
+      (canWish() ? myWishBox(r.date) : '') +
       // 昼・夜の札はカレンダーの凡例と同じ「中が薄い」札（9/29 Naoto）
       '<div class="slot-row"><span class="lg lg-day slot-badge">昼</span>' + chip(r.day[0], me, lk[0], e(0), paintStyle(r.day[0], r.date, '昼', me)) + chip(r.day[1], me, lk[1], e(1), paintStyle(r.day[1], r.date, '昼', me)) + '</div>' +
       venues(r.date, '昼') +
@@ -449,6 +454,54 @@ var SHIFT = (function () {
         : '') +
       (ed && editOn() ? wishLine(r.date) : '') +
       '</div>';
+  }
+
+  // ── 🔄10/1 配信者の休み希望＝シフトのタブで出す（Naoto「休み希望タブいる？カレンダーを触って休み希望に」）──
+  //   受付中の月（締切＝前月20日・GASの d.wish）だけ。日付の詳細の一番下に［なし｜休｜半休］＋時間帯＋ひとこと
+  //   書き先＝シフト表の休み希望欄（本人の列）・ひとことは記録のシート（管理者が見る）。締切後は表示だけ
+  function canWish() { var d = st.data; return !isAdmin() && d && d.wish && d.wish.can; }
+  function myWishBox(date) {
+    var d = st.data, cur = (d.myWish || {})[date] || '', info = u.wishInfo(cur);
+    var note = ((d.wish.notes || {})[date]) || '';
+    var h = '<div class="wm-box"><div class="wm-cap">休み希望</div>';
+    if (info && info.k === 'shoot') return h + '<p class="sub">この日は撮影の予定です（変更は管理者に連絡してください）。</p></div>';
+    if (!d.wish.open || st.me.previewBy) {
+      return h + '<p class="wm-cur">' + (cur ? '<b>' + u.esc(info ? info.label : cur) + '</b>' : '出していません') + (note ? '<small>「' + u.esc(note) + '」</small>' : '') + '</p>' +
+        '<p class="fresh">' + (st.me.previewBy ? 'プレビュー中は見るだけです。' : '締切を過ぎたので変えられません。変更は管理者に連絡してください。') + '</p></div>';
+    }
+    if (!st.wd || st.wd.date !== date) st.wd = { date: date, k: info ? info.k : 'none', ng: info && info.ng ? info.ng.slice() : [], note: note };
+    var dr = st.wd;
+    h += '<div class="wm-kinds">' + [['none', 'なし'], ['off', '休'], ['half', '半休']].map(function (k) {
+      return '<button type="button" class="wm-k' + (dr.k === k[0] ? ' is-on' : '') + '" data-wk="' + k[0] + '">' + k[1] + '</button>';
+    }).join('') + '</div>';
+    if (dr.k === 'half') {
+      h += '<div class="wm-q">' + u.Q4.map(function (q, i) {
+        return '<button type="button" class="wm-qb' + (dr.ng.indexOf(i) >= 0 ? ' is-ng' : '') + '" data-wq="' + i + '">' + q + '</button>';
+      }).join('') + '</div><p class="fresh">' + (dr.ng.length ? '出られない時間帯＝赤・' + u.halfSay(dr.ng) : '出られない時間帯を押して選んでください') + '</p>';
+    }
+    var value = dr.k === 'off' ? '休' : dr.k === 'half' && dr.ng.length ? u.wishText(dr.ng) : '';
+    var same = value === cur && dr.note === note && !(dr.k === 'half' && !dr.ng.length);
+    return h + '<input class="date-input wm-note" id="wm-note" maxlength="100" placeholder="ひとこと（なくてもOK・管理者だけが見ます）" value="' + u.esc(dr.note) + '">' +
+      '<button type="button" class="btn btn-sm" id="wm-save"' + (st.wbusy || same ? ' disabled' : '') + '>' + (st.wbusy ? '送っています…' : cur && !value && dr.k === 'none' ? '希望を取り消す' : 'この日の希望を出す') + '</button></div>';
+  }
+  // カレンダーの上の1行＝締切（あと何日）＋「この月は希望なし」
+  function wishBar(d) {
+    if (!canWish() || !d.wish.open) return '';
+    var left = u.daysBetween(d.today, d.wish.due), n = Object.keys(d.myWish || {}).filter(function (k) { var i = u.wishInfo(d.myWish[k]); return i && i.k !== 'shoot'; }).length;
+    return '<div class="wish-bar' + (left <= 3 ? ' is-urgent' : '') + '"><span><b>' + u.monthLabel(d.ym) + 'の休み希望</b> 締切 ' + u.md(d.wish.due) + '・<b class="num">' + (left ? 'あと' + left + '日' : '今日まで') + '</b></span>' +
+      '<small>' + (n ? '出した日：' + n + '日・' : d.wish.none ? '「希望なし」で出しました・' : '') + '日付を押して出せます</small>' +
+      (!n && !d.wish.none && !st.me.previewBy ? '<button type="button" class="link-btn" id="wm-none">この月は希望なしで出す</button>' : '') + '</div>';
+  }
+  function wishSend(body, msg) {
+    st.wbusy = true; SHIFT.render();
+    return API.wishMe(Object.assign({ ym: st.ym }, body)).then(function (d) {
+      st.wbusy = false; st.wd = null;
+      saveCache(d, new Date()); apply(d, new Date()); APP.toast(msg); SHIFT.render();
+    }, function (e) {
+      st.wbusy = false;
+      if (e.code === 'conflict') { st.wd = null; APP.toast('ほかで変わっていたので読み直しました', true); load(st.ym); return; }
+      SHIFT.render(); APP.toast((e.data && e.data.error) || '送れませんでした', true);
+    });
   }
 
   // 管理者の編集中だけ：その日の休み希望（9/29 Naoto「休み希望が入った状態でいじりたい」）
@@ -478,6 +531,8 @@ var SHIFT = (function () {
       (d.published ? '<span class="pill ok">公開中</span>' : '<span class="pill dim">非公開</span>') +
       '<button type="button" class="btn ' + (d.published ? 'ghost' : '') + ' btn-sm" id="pub-ask">' + (d.published ? '非公開に戻す' : '配信者に公開') + '</button>' +
       (EDIT.can() && editOn() ? '<button type="button" class="btn ghost btn-sm" id="bulk-menu" aria-label="月まとめての操作（自動入力・並び替え・リセット）">一括▾</button>' : '') +
+      // 🔄10/1 休み希望（全員の一覧・届いた希望・まだ出していない人）＝前の休み希望タブの中身を全画面で（wishadmin.js）
+      (window.WISHADMIN && WISHADMIN.can(st.me) ? '<button type="button" class="btn ghost btn-sm wa-open" id="wa-open">休み希望' + (WISHADMIN.unseen() ? '<span class="badge-in">' + WISHADMIN.unseen() + '</span>' : '') + '</button>' : '') +
       '<select id="focus" class="date-input focus-sel" aria-label="強調する人"><option value="">なし</option>' +
       st.me.members.map(function (m) { return '<option value="' + u.esc(m.name) + '"' + (m.name === st.focus ? ' selected' : '') + '>' + u.esc(m.name) + '</option>'; }).join('') +
       '</select></div>';
@@ -527,6 +582,7 @@ var SHIFT = (function () {
       (isAdmin() ? publishBar(d) : '') +
       // 🔄10/1 配信者にも未公開の月のカレンダー（開催・Gバッジ）を見せる。誰がいつ出るかはGASが空で返す
       (!isAdmin() && !d.published ? '<p class="sub unpub-note">' + u.monthLabel(d.ym) + 'のシフトはまだ公開されていません（開催とグレードだけ見られます）</p>' : '') +
+      wishBar(d) +
       // 💡次に決める枠（管理者の編集中だけ・1行）
       (EDIT.can() && editOn() && EDIT.suggestBar && !st.confirm ? EDIT.suggestBar() : '') +
       // 選んだ日の枠＝見ている人（管理者は強調中の人）のメンバーカラー（9/29 Naoto）
@@ -577,6 +633,31 @@ var SHIFT = (function () {
     el.querySelectorAll('.sg-main[data-sg-date]').forEach(function (b) { b.addEventListener('click', function () { EDIT.openSlot(b.dataset.sgDate, +b.dataset.sgSlot); }); });
     if (q('#sg-more')) q('#sg-more').addEventListener('click', function () { EDIT.openSuggest(); });
     if (q('#bulk-menu')) q('#bulk-menu').addEventListener('click', function () { EDIT.openMenu(); });
+    if (q('#wa-open')) q('#wa-open').addEventListener('click', function () { WISHADMIN.open(); });
+    // 配信者の休み希望（10/1）
+    var keepNote = function () { var n = q('#wm-note'); if (n && st.wd) st.wd.note = n.value; };
+    el.querySelectorAll('[data-wk]').forEach(function (b) { b.addEventListener('click', function () { keepNote(); st.wd.k = b.dataset.wk; render(el); }); });
+    el.querySelectorAll('[data-wq]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        keepNote();
+        var i = +b.dataset.wq, ng = st.wd.ng, at = ng.indexOf(i);
+        if (at >= 0) ng.splice(at, 1); else ng.push(i);
+        render(el);
+      });
+    });
+    if (q('#wm-note')) q('#wm-note').addEventListener('input', function () {
+      keepNote();
+      var sv = q('#wm-save'), d = st.data, cur = (d.myWish || {})[st.wd.date] || '';
+      var value = st.wd.k === 'off' ? '休' : st.wd.k === 'half' && st.wd.ng.length ? u.wishText(st.wd.ng) : '';
+      if (sv && !st.wbusy) sv.disabled = value === cur && st.wd.note === (((d.wish.notes || {})[st.wd.date]) || '') || (st.wd.k === 'half' && !st.wd.ng.length);
+    });
+    if (q('#wm-save')) q('#wm-save').addEventListener('click', function () {
+      keepNote();
+      var dr = st.wd, cur = (st.data.myWish || {})[dr.date] || '';
+      var value = dr.k === 'off' ? '休' : dr.k === 'half' ? u.wishText(dr.ng) : '';
+      wishSend({ date: dr.date, value: value, note: dr.note, expect: cur }, value ? u.md(dr.date) + 'の希望を出しました' : '取り消しました');
+    });
+    if (q('#wm-none')) q('#wm-none').addEventListener('click', function () { wishSend({ none: true }, '「希望なし」で出しました'); });
     if (q('#focus')) q('#focus').addEventListener('change', function () { st.focus = q('#focus').value; render(el); });
     if (q('#pub-ask')) q('#pub-ask').addEventListener('click', function () { st.confirm = true; render(el); });
     if (q('#pub-no')) q('#pub-no').addEventListener('click', function () { st.confirm = false; render(el); });
@@ -620,7 +701,8 @@ var SHIFT = (function () {
     //   （管理者の休み希望タブはシフトと同じデータを使う＝wishadmin.js）
     render: function () {
       if (APP.current() === 'shift') render();
-      else if (APP.current() === 'wish' && window.WISHADMIN && WISHADMIN.can(st.me)) WISHADMIN.render();
+      // 管理者の休み希望（全画面）を開いていれば、そちらも描き直す（同じデータを使う＝wishadmin.js）
+      if (window.WISHADMIN && WISHADMIN.isOpen && WISHADMIN.isOpen()) WISHADMIN.render();
     },
     reload: function () { return load(st.ym); },
     // 最新の me（メンバー・色・並び・上限・月の一覧）が届いたら差し替えて描き直す（app.js が控えで先に開いたとき）
