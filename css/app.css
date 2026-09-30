@@ -1204,3 +1204,43 @@ html.rc-lock, html.rc-lock body { overflow: hidden; }
 .sh-st-3 { color: var(--fg-faint); }
 .sh-reply { color: var(--accent); font-size: 13px !important; }
 .sh-rs { width: auto !important; padding: 2px 6px; font-size: 12px; }
+
+/* ── 実績タブの「出演」（presence.js・10/1）＝管理者だけ。Y向けの出演レポート（PDF）と同じ中身 ── */
+.pr-cap { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; margin: 0 0 6px; }
+.pr-cap small { font-weight: 400; font-size: 11px; color: var(--fg-dim); }
+.pr-cap .pr-tlseg { margin-left: auto; }
+.pr-head, .pr-row { display: grid; grid-template-columns: 78px 36px 1fr 1fr 1fr; gap: 4px; align-items: center; font-size: 12px; }
+.pr-head { color: var(--fg-dim); font-size: 11px; padding: 2px 4px 6px; border-bottom: 1px solid var(--line); }
+.pr-head span, .pr-row .num { text-align: right; }
+.pr-row { width: 100%; padding: 8px 4px; border: 0; border-bottom: 1px solid var(--line); background: none; font: inherit; font-size: 12px; color: inherit; text-align: left; cursor: pointer; }
+.pr-row .wa-who { justify-self: start; }
+.pr-row small, .pr-trow small { margin-left: 3px; font-size: 10px; color: var(--fg-dim); }
+.pr-row[aria-expanded="true"] { background: var(--accent-soft); }
+.pr-more { font-size: 12px; color: var(--fg-dim); padding: 6px 6px 8px; border-bottom: 1px solid var(--line); line-height: 1.6; }
+.pr-more b { color: var(--fg); }
+.pr-thead, .pr-trow { display: grid; grid-template-columns: 1fr 96px 96px; gap: 4px; font-size: 12px; padding: 5px 2px; border-bottom: 1px solid var(--line); }
+.pr-thead { color: var(--fg-dim); font-size: 11px; }
+.pr-thead span, .pr-trow .num { text-align: right; }
+.pr-trow.is-sum { font-weight: 700; background: var(--gold-soft); border-bottom: 0; }
+.pr-sub { font-size: 11px; color: var(--fg-dim); margin: 10px 0 2px; }
+.pr-worst { display: grid; grid-template-columns: 88px 1fr 44px; gap: 6px; font-size: 12px; padding: 4px 2px; border-bottom: 1px solid var(--line); }
+.pr-worst .num { text-align: right; }
+.pr-tl { padding-bottom: 8px; }
+.pr-axis { position: relative; height: 14px; margin: 0 0 2px 40px; font-size: 10px; color: var(--fg-faint); }
+.pr-axis span { position: absolute; transform: translateX(-50%); }
+.pr-day { display: grid; grid-template-columns: 36px 1fr; gap: 4px; align-items: center; width: 100%; padding: 3px 0; border: 0; border-top: 1px solid var(--line); background: none; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.pr-day[aria-expanded="true"] { background: var(--accent-soft); }
+.pr-date { font-size: 11px; color: var(--fg-dim); }
+.pr-bars { display: grid; gap: 2px; }
+.pr-track { position: relative; height: 7px; background: var(--panel2); border-radius: 2px; overflow: hidden; }
+.pr-track i { position: absolute; top: 0; bottom: 0; }
+.pr-on { background: var(--mc); }
+.pr-off { background: repeating-linear-gradient(135deg, #b8b5ab 0 2px, #f7f6f2 2px 4px); }
+.pr-nocam { background: #dcdad3; }
+.pr-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: var(--fg-dim); margin-top: 8px; }
+.pr-legend i { display: inline-block; width: 16px; height: 7px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+.pr-detail { display: grid; gap: 4px; padding: 6px 4px 8px; font-size: 12px; }
+.pr-dline { display: flex; align-items: center; gap: 6px; }
+.pr-dline .wa-who { margin-right: 0; font-size: 12px; padding: 0 6px; }
+.pr-br { display: grid; grid-template-columns: 1fr auto 36px; gap: 8px; padding: 3px 0; border-top: 1px dashed var(--line); }
+.pr-br a { color: var(--accent); text-align: right; }
