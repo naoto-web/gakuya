@@ -29,6 +29,7 @@ var APP = (function () {
         '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[t.id] + '</svg>' + t.label + '</button>';
     }).join('') + '</div>';
     if (window.SHARE) SHARE.badge();   // 作り直すと赤丸が消えるので付け直す
+    if (window.WISHADMIN) WISHADMIN.badge();
   }
 
   function render() {
@@ -39,6 +40,8 @@ var APP = (function () {
     if (t.id === 'share') { SHARE.render(); return; }
     // 管理者の休み希望＝シートに入っている希望の一覧（wishadmin.js）。配信者は今までどおり準備中
     if (t.id === 'wish' && window.WISHADMIN && WISHADMIN.can(me)) { WISHADMIN.render(); return; }
+    // 🆕10/1 配信者（プレビュー中も）が自分で休み希望を出す（wishme.js）。配信者に開けるのはGASのスイッチ（me.wish）
+    if (t.id === 'wish' && window.WISHME && me && me.wish) { WISHME.render(); return; }
     // 実績＝note売上（sales.js・9/30〜）。見せてよいかはGASが決める（配信者は本人分だけ・閉じている間は準備中）
     if (t.id === 'stats' && window.SALES && SALES.can(me)) { SALES.render(); return; }
     view.innerHTML = '<h1 class="screen-title">' + t.label + '</h1><div class="card"><span class="pill dim" style="justify-self:start">準備中</span><p>' + t.soon + '</p></div>';
@@ -99,6 +102,7 @@ var APP = (function () {
     render();
     SHIFT.init(m);
     if (m.share) SHARE.init();   // 共有タブの赤丸（自分が答えていない数）
+    if (WISHADMIN.can(m)) WISHADMIN.init();   // 休み希望タブの赤丸（管理者＝配信者から届いた新着）
   }
   function boot() {
     KEYGATE.bind();
@@ -138,5 +142,5 @@ var APP = (function () {
   // ほかの画面からタブを切り替える（休み希望の行→その日のシフト）
   function go(id) { tab = id; render(); window.scrollTo(0, 0); }
 
-  return { toast: toast, current: function () { return tab; }, go: go };
+  return { toast: toast, current: function () { return tab; }, go: go, me: function () { return me; } };
 })();
