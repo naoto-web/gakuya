@@ -72,6 +72,11 @@ var API = (function () {
     publish: function (ym, on) { return post('publish', { ym: ym, on: on }); },
     // 共有タブ（share.js・10/1）。書き込みには as を付ける＝プレビュー中はGASが断る
     share: function () { return get('share'); },
+    // 休み希望（10/1）：配信者＝wish・wishMe／管理者＝wishLog・wishSeen（wish.gs）
+    wish: function (ym) { return get('wish', { ym: ym }); },
+    wishMe: function (body) { return post('wishme', Object.assign({ as: CONFIG.AS }, body)); },
+    wishLog: function (ym) { return get('wishlog', { ym: ym }); },
+    wishSeen: function (ym) { return post('wishseen', { ym: ym }); },
     shareDo: function (body) { return post('share', Object.assign({ as: CONFIG.AS }, body)); },
     // シフトの編集（管理者だけ）。expect＝画面で見ていた中身（シートで変わっていたら書かずに conflict）
     setSlot: function (ym, date, slot, value, expect) { return post('set', { ym: ym, date: date, slot: slot, value: value, expect: expect }); },
