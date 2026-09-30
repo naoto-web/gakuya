@@ -7,6 +7,40 @@
    ・配信者の画面（プレビュー中も）は今までどおり「準備中」 */
 var WISHADMIN = (function () {
   var u = window.OKL.u;
+  // 🆕10/1 配信者が自分で出した休み希望の記録（wish.gs）＝新着の赤丸・ひとこと・まだ出していない人
+  var lg = { unseen: 0, byYm: {}, loading: {} };
+  function badge() {
+    var t = document.querySelector('.tab[data-tab="wish"]');
+    if (!t) return;
+    var b = t.querySelector('.badge');
+    if (!lg.unseen) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('span'); b.className = 'badge'; t.appendChild(b); }
+    b.textContent = lg.unseen;
+  }
+  function loadLog(ym) {
+    if (lg.loading[ym]) return;
+    lg.loading[ym] = true;
+    API.wishLog(ym).then(function (d) {
+      lg.byYm[ym] = d; lg.unseen = d.unseen; badge();
+      if (APP.current() === 'wish') render(document.getElementById('view'));
+      // 画面に出した＝その月の新着は既読に（管理者の誰かが見たら全員分）
+      var n = d.entries.filter(function (e) { return !e.seen; }).length;
+      if (n) API.wishSeen(ym).then(function () { lg.unseen = Math.max(0, lg.unseen - n); badge(); });
+    }, function () { /* 読めなくても一覧は出す */ }).then(function () { lg.loading[ym] = false; });
+  }
+  function logBox(ym, members, colorOf) {
+    var d = lg.byYm[ym];
+    if (!d) return '<div class="card wa-log"><p class="sub">配信者から届いた希望を読み込んでいます…</p></div>';
+    var left = u.daysBetween(u.ymd(new Date()), d.due);
+    return '<div class="card wa-log"><div class="wa-log-head"><b>配信者から届いた希望</b><small>締切 ' + u.md(d.due) + (d.open ? '（あと' + left + '日）' : '（締切済み）') + '</small></div>' +
+      (d.notYet.length ? '<div class="wa-notyet">まだ出していない：' + d.notYet.map(function (n) { return '<span class="wa-who" style="--mc:' + colorOf(n) + '">' + u.esc(n) + '</span>'; }).join('') + '</div>' : '<div class="wa-notyet">全員が出しました</div>') +
+      (d.entries.length ? '<ul class="wa-entries">' + d.entries.slice(0, 12).map(function (e) {
+        var what = e.value === '希望なし' ? 'この月は希望なし' : (e.date ? u.md(e.date) + ' ' + (e.value ? (u.wishInfo(e.value) ? u.wishInfo(e.value).label : e.value) : '取り消し') : '');
+        return '<li' + (e.seen ? '' : ' class="is-new"') + '>' + (e.seen ? '' : '<b class="wa-new">新着</b>') +
+          '<span class="wa-who" style="--mc:' + colorOf(e.who) + '">' + u.esc(e.who) + '</span><span>' + u.esc(what) + '</span>' +
+          (e.note ? '<small class="wa-note">「' + u.esc(e.note) + '」</small>' : '') + '<small class="wa-at">' + u.stamp(e.at) + '</small></li>';
+      }).join('') + '</ul>' : '<p class="sub">まだ届いていません。</p>') + '</div>';
+  }
   // 🔄9/29 Naoto「他→半・表示順は休→半→撮影」＝種類の判定は util.js の wishInfo にまとめた
   function kind(w) { var i = u.wishInfo(w); return i ? i.k : 'half'; }
   // 半休＝出られる所だけ塗る（4等分・util.halfBg）。塗りは普段の札より少し濃く（30%）＝どこが塗られているか見える
@@ -59,6 +93,7 @@ var WISHADMIN = (function () {
       '<div class="seg seg-sm" role="group" aria-label="月">' + shown.map(function (m) {
         return '<button type="button" data-wym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + '</button>';
       }).join('') + '</div>' +
+      logBox(d.ym, members, colorOf) +
       '<div class="card wa-sum">' + members.map(function (m) {
         var c = cnt[m.name];
         return '<div class="wa-sum-row"><span class="wa-who" style="--mc:' + colorOf(m.name) + '">' + u.esc(m.name) + '</span>' +
@@ -76,14 +111,16 @@ var WISHADMIN = (function () {
           '<span class="wa-date"><b class="num ' + dayClass(date) + '">' + Number(date.slice(8)) + '</b><small class="' + dayClass(date) + '">' + u.DOW[u.dow(date)] + '</small></span>' +
           '<span class="wa-chips">' + names.map(function (n) {
             var w = wish[date][n];
-            return '<span class="wa-chip wa-' + kind(w) + (clash(date, n) ? ' is-clash' : '') + '" style="--mc:' + colorOf(n) + halfStyle(w, colorOf(n)) + '">' +
-              u.esc(n) + '<b>' + u.esc(u.wishInfo(w) ? u.wishInfo(w).label : w) + '</b>' + (clash(date, n) ? '<em>入っています</em>' : '') + '</span>';
+            var note = ((lg.byYm[d.ym] || {}).notes || {})[date] ? lg.byYm[d.ym].notes[date][n] : '';   // 配信者のひとこと（10/1）
+            return '<span class="wa-chip wa-' + kind(w) + (clash(date, n) ? ' is-clash' : '') + '" style="--mc:' + colorOf(n) + halfStyle(w, colorOf(n)) + '"' + (note ? ' title="' + u.esc(note) + '"' : '') + '>' +
+              u.esc(n) + '<b>' + u.esc(u.wishInfo(w) ? u.wishInfo(w).label : w) + '</b>' + (note ? '<i class="wa-cm">💬' + u.esc(note) + '</i>' : '') + (clash(date, n) ? '<em>入っています</em>' : '') + '</span>';
           }).join('') + (names.length ? '' : '<span class="wa-none">—</span>') + '</span></button>';
       }).join('') + '</div>' : '<div class="card"><p class="sub">この月のシートがありません。</p></div>') +
       '<p class="fresh">行を押すと、その日の休み希望を直せます（押したその場でシートに保存）。「休」「撮影」の人と、半休でその枠が全部NGの人はシフトの候補外になります。</p>';
 
+    if (!lg.byYm[d.ym]) loadLog(d.ym);
     el.querySelectorAll('[data-wym]').forEach(function (b) { b.addEventListener('click', function () { SHIFT.go(b.dataset.wym); }); });
-    el.querySelector('#w-reload').addEventListener('click', function () { SHIFT.reload(); });
+    el.querySelector('#w-reload').addEventListener('click', function () { delete lg.byYm[d.ym]; SHIFT.reload(); });
     el.querySelectorAll('[data-wdate]').forEach(function (b) {
       b.addEventListener('click', function () {
         var date = b.dataset.wdate;
@@ -103,6 +140,9 @@ var WISHADMIN = (function () {
   return {
     // 管理者本人の鍵のときだけ（プレビュー中は配信者と同じ「準備中」）
     can: function (me) { return !!(me && me.role === 'admin' && !me.previewBy); },
-    render: function () { render(document.getElementById('view')); }
+    render: function () { render(document.getElementById('view')); },
+    // 起動時に新着の数だけ読む（赤丸）
+    init: function () { API.wishLog('').then(function (d) { lg.unseen = d.unseen; badge(); }, function () {}); },
+    badge: badge
   };
 })();
