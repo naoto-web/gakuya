@@ -971,3 +971,16 @@ button.lc:active { filter: brightness(.93); }
   background: color-mix(in srgb, var(--kc) 14%, #ffffff); color: var(--kc); border: 1px solid color-mix(in srgb, var(--kc) 55%, #ffffff); }
 .kb.kc-night { background: #ebe5f6; border-color: #7c7aa6; color: #1f3a68; }
 .kb.kc-mid { background: color-mix(in srgb, #1f3a68 22%, #ffffff); border-color: #2b2f36; color: #2b2f36; }
+
+/* 実績：前月比の札・予想の成績・買ってくれた人（9/30） */
+.s-dl { font-size: 11px; color: var(--fg-dim); }
+.dl-up { color: #1b7f3b; font-weight: 700; }
+.dl-down { color: var(--ng); font-weight: 700; }
+.dl-flat { color: var(--fg-dim); }
+.s-kpi3 { grid-template-columns: 1fr 1fr 1fr; border-top-width: 2px; }
+.s-kpi3.is-admin { grid-template-columns: 1fr 1fr; border-top: 2px dashed var(--line2); }
+.s-kpi3 .s-k b { font-size: 17px; }
+.s-k3-title { grid-column: 1 / -1; font-size: 13px; font-weight: 700; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.s-k3-title small { font-size: 11px; font-weight: 400; color: var(--fg-dim); }
+.s-kpi3 > .sub { grid-column: 1 / -1; margin: 0; }
+.s-note { margin: 6px 4px 2px; }
