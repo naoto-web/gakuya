@@ -32,7 +32,7 @@ var APP = (function () {
     if (t.id === 'shift') { SHIFT.render(); return; }
     // 管理者の休み希望＝シートに入っている希望の一覧（wishadmin.js）。配信者は今までどおり準備中
     if (t.id === 'wish' && window.WISHADMIN && WISHADMIN.can(me)) { WISHADMIN.render(); return; }
-    // 管理者の実績＝note売上（sales.js・9/30〜）。配信者は準備中のまま
+    // 実績＝note売上（sales.js・9/30〜）。見せてよいかはGASが決める（配信者は本人分だけ・閉じている間は準備中）
     if (t.id === 'stats' && window.SALES && SALES.can(me)) { SALES.render(); return; }
     view.innerHTML = '<h1 class="screen-title">' + t.label + '</h1><div class="card"><span class="pill dim" style="justify-self:start">準備中</span><p>' + t.soon + '</p></div>';
   }
