@@ -70,6 +70,9 @@ var API = (function () {
     card: function (date, place) { return get('card', { date: date, place: place }); },             // 出走表（card.js）
     odds: function (date, place, race) { return get('odds', { date: date, place: place, race: race }); },  // 3連単オッズ（card.js）
     publish: function (ym, on) { return post('publish', { ym: ym, on: on }); },
+    // 共有タブ（share.js・10/1）。書き込みには as を付ける＝プレビュー中はGASが断る
+    share: function () { return get('share'); },
+    shareDo: function (body) { return post('share', Object.assign({ as: CONFIG.AS }, body)); },
     // シフトの編集（管理者だけ）。expect＝画面で見ていた中身（シートで変わっていたら書かずに conflict）
     setSlot: function (ym, date, slot, value, expect) { return post('set', { ym: ym, date: date, slot: slot, value: value, expect: expect }); },
     setMemo: function (ym, date, value, expect) { return post('memo', { ym: ym, date: date, value: value, expect: expect }); },
