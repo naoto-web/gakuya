@@ -20,8 +20,11 @@ var APP = (function () {
     { id: 'share', label: '共有' }   // 10/1 Yの要望＝相談・提案と回答・決定事項・プログラマーへの要望（share.js）
   ];
 
+  // 🔄10/1 Naoto「共有は今は管理者だけ」＝GASの me.share が真のときだけ共有タブを出す（配信者に開けるのはGASのスイッチ）
+  function tabs() { return TABS.filter(function (t) { return t.id !== 'share' || (me && me.share); }); }
   function renderTabs() {
-    document.getElementById('tabs').innerHTML = '<div class="tabs-inner">' + TABS.map(function (t) {
+    if (!tabs().some(function (t) { return t.id === tab; })) tab = 'shift';
+    document.getElementById('tabs').innerHTML = '<div class="tabs-inner">' + tabs().map(function (t) {
       return '<button type="button" class="tab" data-tab="' + t.id + '"' + (t.id === tab ? ' aria-current="page"' : '') + '>' +
         '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[t.id] + '</svg>' + t.label + '</button>';
     }).join('') + '</div>';
@@ -95,7 +98,7 @@ var APP = (function () {
     renderWho(m);
     render();
     SHIFT.init(m);
-    SHARE.init();   // 共有タブの赤丸（自分が答えていない数）
+    if (m.share) SHARE.init();   // 共有タブの赤丸（自分が答えていない数）
   }
   function boot() {
     KEYGATE.bind();
@@ -107,8 +110,11 @@ var APP = (function () {
     API.me().then(function (m) {
       try { localStorage.setItem(ME_LS, JSON.stringify(m)); } catch (e) { /* 控えられなくても動く */ }
       if (!me) { start(m); return; }
+      var hadShare = !!(me && me.share);
       me = m;                 // 控えで出していた＝名前の札とメンバー（色・並び・上限）だけ差し替える
       renderWho(m);
+      // 共有タブの出し分けが変わった（控えが古い・スイッチが切り替わった）ときだけタブを作り直す
+      if (hadShare !== !!m.share) { if (m.share) SHARE.init(); if (tab === 'share' && !m.share) render(); else renderTabs(); }
       SHIFT.setMe(m);
     }).catch(function (e) {
       if (me && e.code !== 'key' && e.code !== 'as') return;  // 控えで動いている間の通信の失敗は黙って続ける
