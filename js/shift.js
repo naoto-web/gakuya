@@ -382,7 +382,7 @@ var SHIFT = (function () {
   // その日の開催（GASが netkeiba の開催カレンダーから返す）。昼＝モーニング・デイ／夜＝ナイター・ミッドナイト
   //   🔄9/29 Naoto：札（ボタン）にする。地の色＝コンソールの開催区分の色（§91）で区分がわかる。
   //   中身は「青森 F2 初」＝初日→初・最終日→終・ほかは何日目の数字。グレード開催はグレードの字を金に。
-  //   🔑あとで押したらその場の出走表へ飛べるようにする前提＝押しやすい大きさのボタン（data-venue・data-date を持たせてある）
+  //   🔑押すとその場の出走表（9/30〜 card.js）＝押しやすい大きさのボタン（data-venue・data-date）
   var KUBUN_ORDER = { 'モーニング': 0, '昼間': 1, 'ナイター': 2, 'ミッドナイト': 3 };
   var KUBUN_CLS = { 'モーニング': 'kc-morning', '昼間': 'kc-day', 'ナイター': 'kc-night', 'ミッドナイト': 'kc-mid' };
   function dayMark(d) {
@@ -555,8 +555,8 @@ var SHIFT = (function () {
         render(el);
       });
     });
-    // レースの札：今は案内だけ。出走表ができたらここで data-venue・data-date を使って飛ぶ
-    el.querySelectorAll('.rb').forEach(function (b) { b.addEventListener('click', function () { APP.toast(b.dataset.venue + 'の出走表は準備中です'); }); });
+    // 場の札を押す＝その場のその日の出走表（card.js・9/30 Naoto）
+    el.querySelectorAll('.rb').forEach(function (b) { b.addEventListener('click', function () { CARD.open(b.dataset.date, b.dataset.venue); }); });
     // 管理者の編集（shiftedit.js）
     el.querySelectorAll('[data-edit-slot]').forEach(function (b) {
       b.addEventListener('click', function () { EDIT.openSlot(b.dataset.editDate, +b.dataset.editSlot); });
