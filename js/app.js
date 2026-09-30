@@ -37,6 +37,8 @@ var APP = (function () {
     var t = TABS.filter(function (x) { return x.id === tab; })[0];
     var view = document.getElementById('view');
     if (t.id === 'shift') { SHIFT.render(); return; }
+    // ホーム＝🆕10/1 通知のカード（push.js）＋準備中の案内
+    if (t.id === 'home') { view.innerHTML = '<h1 class="screen-title">ホーム</h1>' + (window.PUSH ? PUSH.homeCard() : '') + '<div class="card"><span class="pill dim" style="justify-self:start">準備中</span><p>' + t.soon + '</p></div>'; return; }
     if (t.id === 'share') { SHARE.render(); return; }
     // 実績＝note売上（sales.js・9/30〜）。見せてよいかはGASが決める（配信者は本人分だけ・閉じている間は準備中）
     //   🆕10/1 管理者だけ［売上｜出演］＝出演ログ（presence.js）
@@ -96,11 +98,15 @@ var APP = (function () {
   var ME_LS = 'gakuya:me:' + (CONFIG.KEY || '').slice(0, 6) + ':' + (CONFIG.AS || '');
   function start(m) {
     me = m;
+    // 通知を押して開いた＝ #tab=share などのタブから（sw.js）
+    var h = location.hash.match(/tab=(\w+)/);
+    if (h) { tab = h[1]; try { history.replaceState(null, '', location.pathname); } catch (e) { /* 古い端末はそのまま */ } }
     renderWho(m);
     render();
     SHIFT.init(m);
     if (m.share) SHARE.init();   // 共有タブの赤丸（自分が答えていない数）
     if (WISHADMIN.can(m)) WISHADMIN.init();   // 休み希望タブの赤丸（管理者＝配信者から届いた新着）
+    if (window.PUSH) PUSH.init(m);            // 🆕10/1 プッシュ通知（登録済みならお知らせを既読にしてアイコンの数字を合わせる）
   }
   function boot() {
     KEYGATE.bind();
@@ -134,11 +140,12 @@ var APP = (function () {
   // アプリに戻ってきたらシフトを取り直す（シートは管理者が随時直すため）
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible' && me && (tab === 'shift' || tab === 'wish')) SHIFT.reload();
+    if (document.visibilityState === 'visible' && me && window.PUSH) PUSH.refresh();   // お知らせを既読・数字を合わせる
   });
 
   boot();
-  // ほかの画面からタブを切り替える（休み希望の行→その日のシフト）
-  function go(id) { tab = id; render(); window.scrollTo(0, 0); }
+  // ほかの画面からタブを切り替える（休み希望の行→その日のシフト）。keep＝同じ画面の描き直し（スクロールを戻さない）
+  function go(id, keep) { tab = id; render(); if (!keep) window.scrollTo(0, 0); }
 
   return { toast: toast, current: function () { return tab; }, go: go, me: function () { return me; } };
 })();
