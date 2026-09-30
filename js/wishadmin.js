@@ -9,8 +9,9 @@ var WISHADMIN = (function () {
   var u = window.OKL.u;
   // 🆕10/1 配信者が自分で出した休み希望の記録（wish.gs）＝新着の赤丸・ひとこと・まだ出していない人
   var lg = { unseen: 0, byYm: {}, loading: {} };
+  // 赤丸＝シフトのタブ（10/1〜 休み希望タブをやめたため）
   function badge() {
-    var t = document.querySelector('.tab[data-tab="wish"]');
+    var t = document.querySelector('.tab[data-tab="shift"]');
     if (!t) return;
     var b = t.querySelector('.badge');
     if (!lg.unseen) { if (b) b.remove(); return; }
@@ -22,10 +23,10 @@ var WISHADMIN = (function () {
     lg.loading[ym] = true;
     API.wishLog(ym).then(function (d) {
       lg.byYm[ym] = d; lg.unseen = d.unseen; badge();
-      if (APP.current() === 'wish') render(document.getElementById('view'));
+      if (sh.open) paint();
       // 画面に出した＝その月の新着は既読に（管理者の誰かが見たら全員分）
       var n = d.entries.filter(function (e) { return !e.seen; }).length;
-      if (n) API.wishSeen(ym).then(function () { lg.unseen = Math.max(0, lg.unseen - n); badge(); });
+      if (n) API.wishSeen(ym).then(function () { lg.unseen = Math.max(0, lg.unseen - n); badge(); SHIFT.render(); });
     }, function () { /* 読めなくても一覧は出す */ }).then(function () { lg.loading[ym] = false; });
   }
   function logBox(ym, members, colorOf) {
@@ -125,6 +126,7 @@ var WISHADMIN = (function () {
       b.addEventListener('click', function () {
         var date = b.dataset.wdate;
         var toShift = function () {
+          close();   // 🔄10/1 全画面を閉じてシフトへ
           SHIFT.select(date);
           APP.go('shift');
           // その日の詳細（休み希望の行つき）が見えるところまで送る
@@ -137,12 +139,44 @@ var WISHADMIN = (function () {
     });
   }
 
+  // ── 🔄10/1 休み希望タブをやめてシフトのタブへ（Naoto）＝管理者はシフトの操作の列の［休み希望］から全画面で開く ──
+  //   中身は前の休み希望タブと同じ（届いた希望・まだの人・人ごとの件数・日ごとの一覧）。戻る＝閉じる
+  var sh = { open: false };
+  function sheetEl() {
+    var el = document.getElementById('wa-sheet');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'wa-sheet'; el.className = 'rc-sheet wa-sheet'; el.hidden = true;
+    el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '休み希望');
+    document.body.appendChild(el);
+    return el;
+  }
+  window.addEventListener('popstate', function () { if (sh.open) hide(); });
+  function hide() { sh.open = false; sheetEl().hidden = true; document.documentElement.classList.remove('rc-lock'); SHIFT.render(); }
+  function close() { if (!sh.open) return; if (history.state && history.state.okwish) history.back(); else hide(); }
+  function paint() {
+    if (!sh.open) return;
+    var box = sheetEl();
+    box.innerHTML = '<div class="rc-in"><div class="rc-top"><button type="button" class="rc-back" id="wa-close">‹ シフト</button><div class="rc-title"><b>休み希望</b></div><span></span></div><div id="wa-body" class="wa-body"></div></div>';
+    render(box.querySelector('#wa-body'));
+    box.querySelector('#wa-close').addEventListener('click', close);
+  }
+
   return {
-    // 管理者本人の鍵のときだけ（プレビュー中は配信者と同じ「準備中」）
+    // 管理者本人の鍵のときだけ（プレビュー中は配信者の画面＝シフトのタブで自分の希望を出す形）
     can: function (me) { return !!(me && me.role === 'admin' && !me.previewBy); },
-    render: function () { render(document.getElementById('view')); },
+    render: paint,
+    open: function () {
+      sh.open = true;
+      try { history.pushState({ okwish: 1 }, ''); } catch (e) { /* 積めない端末は×で閉じる */ }
+      var el = sheetEl(); el.hidden = false; el.scrollTop = 0;
+      document.documentElement.classList.add('rc-lock');
+      paint();
+    },
+    isOpen: function () { return sh.open; },
+    unseen: function () { return lg.unseen; },
     // 起動時に新着の数だけ読む（赤丸）
-    init: function () { API.wishLog('').then(function (d) { lg.unseen = d.unseen; badge(); }, function () {}); },
+    init: function () { API.wishLog('').then(function (d) { lg.unseen = d.unseen; badge(); SHIFT.render(); }, function () {}); },
     badge: badge
   };
 })();
