@@ -986,3 +986,84 @@ button.lc:active { filter: brightness(.93); }
 .s-note { margin: 6px 4px 2px; }
 /* 買ってくれた人＝2×2（購入者｜新規／リピート客｜太客）・9/30 Naoto「横2縦2が見やすい」 */
 .s-kpi3.s-kpi2x2 { grid-template-columns: 1fr 1fr; }
+
+/* ── 出走表（card.js・9/30）＝シフトの上にかぶせる全画面のシート ── */
+html.rc-lock, html.rc-lock body { overflow: hidden; }
+.rc-sheet { position: fixed; inset: 0; z-index: 60; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.rc-sheet[hidden] { display: none; }
+.rc-in { max-width: 480px; margin: 0 auto; padding: 0 16px calc(24px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; }
+.rc-top { position: sticky; top: 0; z-index: 2; background: var(--bg); display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 0 8px; border-bottom: 1px solid var(--line); }
+.rc-back { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.rc-title { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-width: 0; line-height: 1.3; }
+.rc-title b { font-size: 18px; }
+.rc-title small { font-size: 12px; color: var(--fg-dim); flex-basis: 100%; }
+.rc-grade { font-size: 11px; font-weight: 700; color: var(--fg-dim); border: 1px solid var(--line2, var(--line)); border-radius: 4px; padding: 0 4px; }
+.rc-grade.is-g { color: #8a5d00; background: var(--gold-soft); border-color: transparent; }
+.rc-kb { padding: 0 5px; font-size: 11px; }
+.rc-nichi { font-size: 11px; color: var(--fg-dim); }
+.rc-top .link-btn { margin: 0; white-space: nowrap; }
+
+.rc-races { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
+.rc-races::-webkit-scrollbar { display: none; }
+.rc-rb { flex: 0 0 auto; display: grid; justify-items: center; min-width: 50px; padding: 3px 6px; line-height: 1.2;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.rc-rb b { font-size: 15px; }
+.rc-rb small { font-size: 12px; color: var(--fg-dim); }
+.rc-rb.is-done { background: transparent; color: var(--fg-faint); }
+.rc-rb.is-done small { color: var(--fg-faint); }
+.rc-rb.is-sel { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.rc-rb.is-sel small { color: var(--on-accent); opacity: .85; }
+
+.rc-race { display: grid; gap: 4px; }
+.rc-race-head { display: flex; align-items: baseline; gap: 8px; }
+.rc-race-head b { font-size: 20px; }
+.rc-race-head span { font-size: 14px; font-weight: 700; }
+.rc-race-sub { font-size: 13px; color: var(--fg-dim); font-family: inherit; }
+.rc-cap { font-size: 11px; font-weight: 700; color: var(--fg-dim); margin-right: 2px; }
+.rc-narabi { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.rc-ln { display: inline-flex; gap: 2px; align-items: center; }
+.rc-seri { display: inline-flex; align-items: center; }
+.rc-seri i { font-style: normal; font-size: 11px; margin: 0 1px; color: var(--fg-dim); }
+
+/* 車番の札（競輪の決まりの色）。白は枠で見分ける */
+.rc-car { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; flex: 0 0 auto; border-radius: 5px;
+  font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 17px; line-height: 1; box-shadow: inset 0 0 0 1px rgba(35, 37, 42, .35); }
+.rc-car.sm { width: 20px; height: 20px; font-size: 14px; border-radius: 4px; }
+
+.rc-table { padding: 4px 10px; gap: 0; }
+.rc-grp { padding: 4px 0; border-bottom: 2px solid var(--line); }
+.rc-grp:last-of-type { border-bottom: 0; }
+.rc-grp-cap { font-size: 10px; font-weight: 700; color: var(--fg-faint); letter-spacing: .06em; }
+.rc-row { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; align-items: center; padding: 4px 0; }
+.rc-row + .rc-row { border-top: 1px dashed var(--line); }
+.rc-main { min-width: 0; display: grid; gap: 1px; }
+.rc-l1 { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+.rc-name { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.rc-hj { font-size: 10px; color: var(--ng); font-weight: 700; white-space: nowrap; }
+.rc-role { font-size: 10px; color: var(--fg-dim); white-space: nowrap; }
+.rc-role.is-seri { color: var(--ng); font-weight: 700; }
+.rc-kyaku { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--fg-dim); white-space: nowrap; }
+.rc-score { font-size: 17px; font-weight: 700; min-width: 46px; text-align: right; }
+.rc-l2 { display: flex; align-items: baseline; gap: 8px; font-size: 11px; color: var(--fg-dim); white-space: nowrap; }
+.rc-l2 > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rc-bhs { margin-left: auto; display: inline-flex; gap: 5px; font-size: 13px; }
+.rc-bhs i { font-style: normal; }
+.rc-win { font-size: 13px; min-width: 46px; text-align: right; }
+.top1 { color: #d12a2a; font-weight: 700; }
+.top2 { color: #1f5fd1; font-weight: 700; }
+
+.rc-res-row { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.rc-res-row small { color: var(--fg-dim); font-size: 12px; }
+.rc-pos { font-size: 12px; font-weight: 700; color: var(--fg-dim); width: 26px; }
+.rc-pay { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
+.rc-pay-row { display: grid; grid-template-columns: 48px auto 1fr; align-items: center; gap: 6px; }
+.rc-pay-row b { text-align: right; font-size: 17px; }
+.rc-combo { display: inline-flex; gap: 2px; }
+
+.rc-odds-head { display: flex; justify-content: space-between; align-items: baseline; }
+.rc-odds-head h3 small { font-weight: 400; margin-left: 6px; }
+.rc-odds-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 3px 14px; }
+.rc-odds-list li { display: grid; grid-template-columns: 18px auto 1fr; align-items: center; gap: 5px; padding: 2px 0; border-bottom: 1px dashed var(--line); }
+.rc-rank { font-size: 12px; color: var(--fg-faint); text-align: right; }
+.rc-odds-list b { text-align: right; font-size: 16px; }
