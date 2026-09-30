@@ -104,7 +104,7 @@ var SALES = (function () {
   }
   function pct1(v) { return v == null ? '—' : v.toFixed(1) + '%'; }
 
-  // ── 購入者数（9/30 Naoto③・🔴管理者だけ）＝人数だけ（名前は持っていない） ──
+  // ── 購入者数（9/30 Naoto③）＝人数だけ（名前は持っていない）。🔄同日 配信者にも本人分は見せる（本人のnoteから数えた本人の客の人数）＝GASが本人の行だけ返す ──
   function buyerOf(who, ym) { return (st.buyers || []).filter(function (r) { return r[0] === who && r[1] === ym; })[0] || null; }
 
   function head(d) {
@@ -131,7 +131,7 @@ var SALES = (function () {
           '<span class="num">' + x.s.nd + '日</span><span class="num">' + (x.s.nd ? u.yen(x.s.total / x.s.nd) : '—') + '</span></button>';
       }).join('') +
       '<div class="s-all-row is-sum"><span>合計</span><span class="num">' + u.yen(sum.total) + '</span><span class="num">' + u.yen(sum.net) + '</span><span></span><span></span></div></div>' +
-      // 的中率・回収率・購入者（9/30）。購入者は管理者だけ
+      // 的中率・回収率・購入者（9/30）。全員の表は管理者の画面だけ
       (st.all ? '<div class="card s-all"><div class="s-all-head"><span></span><span>的中率</span><span>回収率</span><span>購入者</span><span>リピート</span></div>' +
         list.map(function (x) {
           var h = hitStats(st.ym, x.m.name), b = buyerOf(x.m.name, st.ym), bp = prevYm(st.ym) ? buyerOf(x.m.name, prevYm(st.ym)) : null;
@@ -139,7 +139,7 @@ var SALES = (function () {
             '<span class="wa-who" style="--mc:' + colorOf(x.m.name) + '">' + u.esc(x.m.name) + '</span>' +
             '<span class="num">' + (h ? pct1(h.rate) : '—') + '</span><span class="num">' + (h ? pct1(h.back) : '—') + '</span>' +
             '<span class="num">' + (b ? u.yen(b[2]) + '人' : '—') + '</span><span class="num">' + (b && bp ? Math.round(b[4] / bp[2] * 100) + '%' : '—') + '</span></button>';
-        }).join('') + '<p class="fresh s-note">的中率・回収率＝配信コンソールの予想（8/14〜）。購入者は管理者だけ・リピート＝先月買った人のうち今月も買った割合' +
+        }).join('') + '<p class="fresh s-note">的中率・回収率＝配信コンソールの予想（8/14〜）。リピート＝先月買った人のうち今月も買った割合' +
         (partialDay(st.ym) ? '（今月は' + u.mdShort(st.asof) + 'までなので低めに出ます）' : '') + '</p></div>' : '') +
       // 全員の比較＝人ごとに1段ずつの小さなグラフ（同じ目盛り）。メンバーカラー6色は1枚に重ねると見分けにくい（赤⇔橙・黄⇔緑）ので段に分ける
       '<div class="card ch-card"><div class="ch-title">全員の比較<small>月ごとの売上（手数料の前）・目盛りは全員同じ</small></div><div id="ch-all">' + (st.all ? '' : '<p class="sub">読み込み中…</p>') + '</div></div>';
@@ -248,8 +248,8 @@ var SALES = (function () {
         '<div class="s-k"><small>回収率</small><b class="num">' + pct1(hs.back) + '</b><small>回収 ' + yen(hs.ref) + '</small>' + dlH(hp && delta(hs.back, hp.back, 'pt')) + '</div>' +
         '<div class="s-k"><small>note記事の的中率</small><b class="num">' + pct1(hs.nRate) + '</b><small>' + hs.nHit + '/' + hs.nSettled + 'レース</small>' + dlH(hp && delta(hs.nRate, hp.nRate, 'pt')) + '</div>'
         : '<p class="sub">' + (st.all ? 'この月の予想データはありません（8/14から）' : '読み込み中…') + '</p>') + '</div>' +
-      // 購入者数（管理者だけ）
-      (st.all ? '<div class="card s-kpi s-kpi3 is-admin"><div class="s-k3-title">買ってくれた人<small>管理者だけ・人数だけ（名前は持っていません）</small></div>' +
+      // 購入者数（配信者には本人分だけ）
+      (st.all ? '<div class="card s-kpi s-kpi3" style="--mc:' + colorOf(who) + '"><div class="s-k3-title">買ってくれた人<small>人数だけ（名前は持っていません）</small></div>' +
         (b ? '<div class="s-k"><small>購入者</small><b class="num">' + u.yen(b[2]) + '人</b>' + (partialDay(st.ym) ? '<small>' + u.mdShort(st.asof) + 'まで</small>' : dl(bp && delta(b[2], bp[2], 'pct'))) + '</div>' +
           '<div class="s-k"><small>新規</small><b class="num">' + (firstMonth ? '—' : u.yen(b[3]) + '人') + '</b><small>' + (firstMonth ? 'データの始まりの月' : 'はじめて買った人') + '</small>' + dl(bOk && delta(b[3], bp[3], 'pct')) + '</div>' +
           '<div class="s-k"><small>リピート客</small><b class="num">' + (firstMonth ? '—' : u.yen(b[4]) + '人') + '</b><small>' + (bp && !firstMonth ? '先月の' + u.yen(bp[2]) + '人のうち' + Math.round(rep) + '%' : '前の月も買った人') + '</small>' +
