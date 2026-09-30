@@ -524,6 +524,8 @@ h1.brand { margin: 0; line-height: 0; }
 .gb { display: inline-block; font-size: 9px; font-weight: 700; line-height: 1; padding: 2px 2px; border-radius: 3px; white-space: nowrap; margin-top: 2px; }
 .gb-day { background: #f2c94c; color: #3d2b00; }
 .gb-night { background: #1f2550; color: #f3d38a; box-shadow: inset 0 0 0 1px #f3d38a; }
+/* 10/1 昼と夜の両方にグレードがある日＝左半分が昼の黄・右半分が夜の紺（字は金の縁取りで読めるように） */
+.gb-both { background: linear-gradient(90deg, #f2c94c 0 50%, #1f2550 50% 100%); color: #fff; text-shadow: 0 0 2px #1f2550, 0 0 1px #1f2550; }
 /* 自分の出勤日：昼＝薄い黄のマス／夜＝紺のマス */
 .scal-cell.is-mine-day { background: #fff3c4; border-color: #e0b84a; }
 .scal-cell.is-mine-night { background: #2d3561; border-color: #2d3561; }
