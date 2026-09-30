@@ -9,13 +9,15 @@ var APP = (function () {
     home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>',
     shift: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
     wish: '<path d="M4 20V5a1 1 0 0 1 1-1h11l4 4v12z"/><path d="M8 13l3 3 5-6"/>',
-    stats: '<path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/>'
+    stats: '<path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/>',
+    share: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'
   };
   var TABS = [
     { id: 'home', label: 'ホーム', soon: '次の出番・休み希望の締切・自分の数字をここにまとめます。' },
     { id: 'shift', label: 'シフト' },
     { id: 'wish', label: '休み希望', soon: '休みたい日をカレンダーで選んで、管理者に送れるようになります。締切もここに出ます。' },
-    { id: 'stats', label: '実績', soon: '自分のnote売上と的中率・回収率を見られるようになります（本人の分だけ）。' }
+    { id: 'stats', label: '実績', soon: '自分のnote売上と的中率・回収率を見られるようになります（本人の分だけ）。' },
+    { id: 'share', label: '共有' }   // 10/1 Yの要望＝相談・提案と回答・決定事項・プログラマーへの要望（share.js）
   ];
 
   function renderTabs() {
@@ -23,6 +25,7 @@ var APP = (function () {
       return '<button type="button" class="tab" data-tab="' + t.id + '"' + (t.id === tab ? ' aria-current="page"' : '') + '>' +
         '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[t.id] + '</svg>' + t.label + '</button>';
     }).join('') + '</div>';
+    if (window.SHARE) SHARE.badge();   // 作り直すと赤丸が消えるので付け直す
   }
 
   function render() {
@@ -30,6 +33,7 @@ var APP = (function () {
     var t = TABS.filter(function (x) { return x.id === tab; })[0];
     var view = document.getElementById('view');
     if (t.id === 'shift') { SHIFT.render(); return; }
+    if (t.id === 'share') { SHARE.render(); return; }
     // 管理者の休み希望＝シートに入っている希望の一覧（wishadmin.js）。配信者は今までどおり準備中
     if (t.id === 'wish' && window.WISHADMIN && WISHADMIN.can(me)) { WISHADMIN.render(); return; }
     // 実績＝note売上（sales.js・9/30〜）。見せてよいかはGASが決める（配信者は本人分だけ・閉じている間は準備中）
@@ -91,6 +95,7 @@ var APP = (function () {
     renderWho(m);
     render();
     SHIFT.init(m);
+    SHARE.init();   // 共有タブの赤丸（自分が答えていない数）
   }
   function boot() {
     KEYGATE.bind();
