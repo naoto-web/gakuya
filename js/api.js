@@ -60,7 +60,8 @@ var API = (function () {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
-    }).then(function (r) { return r.json(); }).then(check);
+    }).then(function (r) { return r.json(); }).then(check)
+      .then(function (j) { if (window.PUSH) PUSH.soon(); return j; });   // 🆕10/1 答えた・出した＝アイコンの数字を合わせ直す
   }
 
   return {
