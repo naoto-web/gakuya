@@ -20,5 +20,7 @@ var CONFIG = (function () {
   var AS_LS = 'gakuya:as';
   var as = '';
   try { as = localStorage.getItem(AS_LS) || ''; } catch (e) { as = ''; }
-  return { GAS_URL: GAS_URL, KEY_LS: KEY_LS, KEY: key, AS_LS: AS_LS, AS: as };
+  // 🆕10/1 プッシュ通知の公開鍵（VAPID・公開してよい方）。秘密鍵はGASのスクリプトプロパティだけ
+  var VAPID = 'BIRDm5Ztskw7FAPJKhGhnpERA_SE3rg4isYfF9ib-4xkh5Ck7aSLAhcIy4-F_VSsMMaAd3ZjmXwggUKUTSaUF1g';
+  return { GAS_URL: GAS_URL, KEY_LS: KEY_LS, KEY: key, AS_LS: AS_LS, AS: as, VAPID: VAPID };
 })();
