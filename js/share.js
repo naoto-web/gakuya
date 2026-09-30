@@ -10,6 +10,7 @@ var SHARE = (function () {
   // 🔄10/1 種類＝相談（賛成・反対・どちらでも）／お願い（了解・難しい→あとで完了）。回答の色は字で決める（字でも区別できる）
   var ACLS = { '賛成': 'ok', '反対': 'ng', 'どちらでも': 'mid', '了解': 'ok', '難しい': 'ng', '完了': 'done' };
   function acls(a) { return 'sh-a sh-a-' + (ACLS[a] || 'mid'); }
+  function alabel(d) { return u.esc((d && d.adminLabel) || '管理者'); }
 
   function load(quiet) {
     if (st.loading) return;
@@ -59,8 +60,9 @@ var SHARE = (function () {
         d.people.members.filter(function (n) { return n !== d.me; }).map(function (n) { return chip(n, !ask); }).join('') +
         d.people.others.filter(function (n) { return n !== d.me; }).map(function (n) { return chip(n, false); }).join('') + '</div>' +
       '<label class="field-cap" for="sh-due">' + (ask ? 'いつまでに' : '回答の期限') + '</label><input id="sh-due" type="date" class="date-input" value="' + def + '">' +
-      '<p class="fresh">' + (ask ? '相手は「了解・難しい」で返事をして、終わったら「完了」を押します。誰がどう返事したかは、あなたと管理者が見られます。'
-        : '回答は「賛成・反対・どちらでも」＋ひとこと。誰がどう答えたかは管理者だけが見られます（投稿した人にも見えません）。') + '</p>' +
+      // 説明文の「管理者」＝GASの adminLabel（10/1 Naoto「管理者（名前）」に。🔴名前はここに書かない）
+      '<p class="fresh">' + (ask ? '相手は「了解・難しい」で返事をして、終わったら「完了」を押します。誰がどう返事したかは、あなたと' + alabel(d) + 'が見られます。'
+        : '回答は「賛成・反対・どちらでも」＋ひとこと。誰がどう答えたかは' + alabel(d) + 'だけが見られます（投稿した人にも見えません）。') + '</p>' +
       '<div class="sh-row"><button type="button" class="btn" id="sh-post"' + (st.busy ? ' disabled' : '') + '>投稿する</button><button type="button" class="link-btn" id="sh-cancel">やめる</button></div></div>';
   }
 
@@ -88,7 +90,7 @@ var SHARE = (function () {
         h += '<div class="sh-ans">' + kinds.map(function (a) {
           return '<button type="button" class="sh-ab ' + acls(a) + (cur === a ? ' is-on' : '') + '" data-ans="' + u.esc(a) + '" data-pid="' + p.id + '">' + (a === '了解' ? '了解しました' : a === '完了' && !p.mine ? 'もう完了' : a) + '</button>';
         }).join('') + '</div>' +
-          '<input class="date-input sh-c" id="sh-c-' + p.id + '" maxlength="500" placeholder="' + (ask ? 'ひとこと（なくてもOK・お願いした人と管理者が見ます）' : 'ひとこと（なくてもOK・管理者だけが見ます）') + '" value="' + u.esc(p.mine ? p.mine.c : '') + '">' +
+          '<input class="date-input sh-c" id="sh-c-' + p.id + '" maxlength="500" placeholder="' + (ask ? 'ひとこと（なくてもOK・お願いした人と' + alabel(d) + 'が見ます）' : 'ひとこと（なくてもOK・' + alabel(d) + 'だけが見ます）') + '" value="' + u.esc(p.mine ? p.mine.c : '') + '">' +
           (p.overdue ? '<p class="fresh">期限を過ぎていますが、まだ答えられます（締切後の印が付きます）。</p>' : '');
       }
     }
@@ -100,7 +102,7 @@ var SHARE = (function () {
   function detailBox(p, d) {
     if (!p.answers) return '';
     var ask = p.type === 'お願い';
-    return '<div class="sh-admin"><div class="sh-admin-cap">' + (d.admin ? '管理者だけ' : 'あなた（お願いした人）と管理者だけ') + '</div>' +
+    return '<div class="sh-admin"><div class="sh-admin-cap">' + (d.admin ? alabel(d) + 'だけ' : 'あなた（お願いした人）と' + alabel(d) + 'だけ') + '</div>' +
       '<div class="sh-tally">' + p.kinds.map(function (a) { return '<span class="' + acls(a) + '">' + a + ' ' + (p.tally[a] || 0) + '</span>'; }).join('') + '</div>' +
       (p.answers.length ? '<ul class="sh-list">' + p.answers.map(function (a) {
         return '<li><b>' + u.esc(a.who) + '</b><span class="' + acls(a.a) + '">' + u.esc(a.a) + '</span>' + (a.late ? '<small class="sh-late">締切後</small>' : '') +
@@ -122,7 +124,8 @@ var SHARE = (function () {
 
   function requestsBox(d) {
     return '<div class="card sh-req"><h3>プログラマーへの要望</h3>' +
-      '<textarea id="sh-req" class="date-input sh-ta" rows="3" maxlength="2000" placeholder="アプリやOBSで追加してほしい機能、追加してほしい的中演出、アプリやOBSの不具合等がございましたらこちらからどうぞ"></textarea>' +
+      // 🔄10/1 Naoto：例を3行で（&#10;＝入力欄の中の改行）
+      '<textarea id="sh-req" class="date-input sh-ta" rows="4" maxlength="2000" placeholder="例：&#10;追加してほしいアプリの機能（自分だけ追加でも可）&#10;追加してほしいOBSの機能・的中演出&#10;アプリやOBSの不具合等"></textarea>' +
       '<div class="sh-row"><button type="button" class="btn" id="sh-reqsend"' + (st.busy ? ' disabled' : '') + '>要望を出す</button></div>' +
       (d.requests.length ? '<ul class="sh-reqlist">' + d.requests.map(function (r) {
         return '<li><div class="sh-reqhead"><span class="sh-st sh-st-' + d.reqStates.indexOf(r.state) + '">' + u.esc(r.state) + '</span><small>' + (d.admin ? u.esc(r.who) + '・' : '') + when(r.at) + '</small></div>' +
