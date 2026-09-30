@@ -381,7 +381,8 @@ var SHIFT = (function () {
         (!me && !all && isAdmin() ? shootMark(r) : '') +
         // グレードの札は「本人がその日その時間帯に出る」ときだけ（夜に出る日の昼Gは出さない・9/29 Naoto）。
         //   管理者で誰も強調していないときは全部出す（全体を見る画面なので）
-        (me && !all ? (slot ? gradeAt(r, slot) : '') : gradeBadge(r.grade, r.grade2)) + '</span>' +
+        //   🔄10/1 未公開の月（配信者は出番が空＝namesHidden）は全部出す＝次の月の予定を立てる用（Naoto）
+        (me && !all && !(st.data && st.data.namesHidden) ? (slot ? gradeAt(r, slot) : '') : gradeBadge(r.grade, r.grade2)) + '</span>' +
         (all ? '<span class="scal-body is-all">' + blocks(r, me) + '</span></button>' : '<span class="scal-body">' + cellBody(r, me, slot) + '</span></button>');
     });
     return '<div class="cal-head mon">' + HEAD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="scal">' + h + '</div>';
