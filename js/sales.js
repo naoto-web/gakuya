@@ -161,13 +161,14 @@ var SALES = (function () {
     });
   }
 
-  // 個人＝数字のまとめ＋昼・夜・グレード＋記事ごと（日付の新しい順・その日の中は昼→夜）
+  // 個人＝数字のまとめ＋昼・夜・グレード＋記事ごと（1日が上・その日の中はモ→デ→ナ→ミ）
   function oneView(d, shift, who) {
     var s = stats(d.rows, who, shift, st.ym);
     var mine = d.rows.filter(function (r) { return r[C.who] === who; });
     var byDay = {};
     mine.forEach(function (r) { (byDay[r[C.day]] = byDay[r[C.day]] || []).push(r); });
-    var days = Object.keys(byDay).map(Number).sort(function (a, b) { return b - a; });
+    // 1日が上（9/30 Naoto）＝上の「日ごとの売上」グラフ（左が1日）と向きをそろえる
+    var days = Object.keys(byDay).map(Number).sort(function (a, b) { return a - b; });
     var line = function (label, cls, v, n) {
       return '<div class="s-br"><span class="lg ' + cls + '">' + label + '</span><span class="num">' + yen(v) + '</span><span class="num">' + n + '日</span><span class="num">' + per(v, n) + '</span></div>';
     };
