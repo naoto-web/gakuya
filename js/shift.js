@@ -153,7 +153,7 @@ var SHIFT = (function () {
       var shoot = /撮影/.test(wishFor(r.date, me)) ? '<span class="sb-shoot">撮影</span>' : '';
       // 🔄10/1 休み希望（休・半）もマスに出す＝出番の無い日（未公開の月・休みを出した日）に「休」「半」
       var wi = u.wishInfo(wishFor(r.date, me));
-      var wmark = wi && wi.k !== 'shoot' ? '<b class="wm-mark wm-' + wi.k + '">' + (wi.k === 'off' ? '休' : '半') + '</b>' : '';
+      var wmark = wi && wi.k !== 'shoot' ? '<b class="wm-mark wm-' + wi.k + '">' + (wi.k === 'off' ? '休' : wi.k === 'want' ? '出' : '半') + '</b>' : '';
       if (!slot) return shoot || wmark;
       // 通し＝相方を上＝昼・下＝夜の2段で（マスも上下で昼の黄／夜の藍・9/30 Naoto「上下2分割」）
       if (slot === '通し') {
@@ -463,33 +463,50 @@ var SHIFT = (function () {
   function myWishBox(date) {
     var d = st.data, cur = (d.myWish || {})[date] || '', info = u.wishInfo(cur);
     var note = ((d.wish.notes || {})[date]) || '';
-    var h = '<div class="wm-box"><div class="wm-cap">休み希望</div>';
+    var h = '<div class="wm-box"><div class="wm-cap">休み・出勤希望</div>';
     if (info && info.k === 'shoot') return h + '<p class="sub">この日は撮影の予定です（変更は管理者に連絡してください）。</p></div>';
     if (!d.wish.open || st.me.previewBy) {
       return h + '<p class="wm-cur">' + (cur ? '<b>' + u.esc(info ? info.label : cur) + '</b>' : '出していません') + (note ? '<small>「' + u.esc(note) + '」</small>' : '') + '</p>' +
         '<p class="fresh">' + (st.me.previewBy ? 'プレビュー中は見るだけです。' : '締切を過ぎたので変えられません。変更は管理者に連絡してください。') + '</p></div>';
     }
-    if (!st.wd || st.wd.date !== date) st.wd = { date: date, k: info ? info.k : 'none', ng: info && info.ng ? info.ng.slice() : [], note: note };
+    if (!st.wd || st.wd.date !== date) st.wd = { date: date, k: info ? info.k : 'none', ng: info && info.ng ? info.ng.slice() : [], ws: info && info.slot ? info.slot : '', note: note };
     var dr = st.wd;
-    h += '<div class="wm-kinds">' + [['none', 'なし'], ['off', '休'], ['half', '半休']].map(function (k) {
-      return '<button type="button" class="wm-k' + (dr.k === k[0] ? ' is-on' : '') + '" data-wk="' + k[0] + '">' + k[1] + '</button>';
+    // 🆕10/1 ［入りたい］＝出勤希望（Yの了承）→［昼｜夜｜どちらでも］
+    h += '<div class="wm-kinds">' + [['none', 'なし'], ['off', '休'], ['half', '半休'], ['want', '入りたい']].map(function (k) {
+      return '<button type="button" class="wm-k' + (dr.k === k[0] ? ' is-on' : '') + (k[0] === 'want' ? ' wm-k-want' : '') + '" data-wk="' + k[0] + '">' + k[1] + '</button>';
     }).join('') + '</div>';
     if (dr.k === 'half') {
       h += '<div class="wm-q">' + u.Q4.map(function (q, i) {
         return '<button type="button" class="wm-qb' + (dr.ng.indexOf(i) >= 0 ? ' is-ng' : '') + '" data-wq="' + i + '">' + q + '</button>';
       }).join('') + '</div><p class="fresh">' + (dr.ng.length ? '出られない時間帯＝赤・' + u.halfSay(dr.ng) : '出られない時間帯を押して選んでください') + '</p>';
     }
-    var value = dr.k === 'off' ? '休' : dr.k === 'half' && dr.ng.length ? u.wishText(dr.ng) : '';
-    var same = value === cur && dr.note === note && !(dr.k === 'half' && !dr.ng.length);
+    if (dr.k === 'want') {
+      h += '<div class="wm-q wm-q3">' + ['昼', '夜', 'どちらでも'].map(function (s) {
+        return '<button type="button" class="wm-qb' + (dr.ws === s ? ' is-want' : '') + '" data-ws="' + s + '">' + s + '</button>';
+      }).join('') + '</div><p class="fresh">入りたい時間帯を選んでください。必ず入れる約束ではなく、シフトを組むときの参考です（誰が出したかは管理者だけが見ます）。</p>';
+    }
+    var value = draftValue(dr);
+    var same = value === cur && dr.note === note && !incomplete(dr);
     return h + '<input class="date-input wm-note" id="wm-note" maxlength="100" placeholder="ひとこと（なくてもOK・管理者だけが見ます）" value="' + u.esc(dr.note) + '">' +
       '<button type="button" class="btn btn-sm" id="wm-save"' + (st.wbusy || same ? ' disabled' : '') + '>' + (st.wbusy ? '送っています…' : cur && !value && dr.k === 'none' ? '希望を取り消す' : 'この日の希望を出す') + '</button></div>';
   }
+  // 書きかけの中身 → シートに入れる文字（休／半（モ・デNG）／出（夜）／''）
+  function draftValue(dr) {
+    if (dr.k === 'off') return '休';
+    if (dr.k === 'half') return dr.ng.length ? u.wishText(dr.ng) : '';
+    if (dr.k === 'want') return dr.ws ? u.wantText(dr.ws) : '';
+    return '';
+  }
+  function incomplete(dr) { return (dr.k === 'half' && !dr.ng.length) || (dr.k === 'want' && !dr.ws); }
   // カレンダーの上の1行＝締切（あと何日）＋「この月は希望なし」
   function wishBar(d) {
     if (!canWish() || !d.wish.open) return '';
-    var left = u.daysBetween(d.today, d.wish.due), n = Object.keys(d.myWish || {}).filter(function (k) { var i = u.wishInfo(d.myWish[k]); return i && i.k !== 'shoot'; }).length;
-    return '<div class="wish-bar' + (left <= 3 ? ' is-urgent' : '') + '"><span><b>' + u.monthLabel(d.ym) + 'の休み希望</b> 締切 ' + u.md(d.wish.due) + '・<b class="num">' + (left ? 'あと' + left + '日' : '今日まで') + '</b></span>' +
-      '<small>' + (n ? '出した日：' + n + '日・' : d.wish.none ? '「希望なし」で出しました・' : '') + '日付を押して出せます</small>' +
+    var left = u.daysBetween(d.today, d.wish.due), c = { off: 0, half: 0, want: 0 };
+    Object.keys(d.myWish || {}).forEach(function (k) { var i = u.wishInfo(d.myWish[k]); if (i && c[i.k] != null) c[i.k]++; });
+    var n = c.off + c.half + c.want;
+    var said = [c.off ? '休' + c.off : '', c.half ? '半休' + c.half : '', c.want ? '入りたい' + c.want : ''].filter(Boolean).join('・');
+    return '<div class="wish-bar' + (left <= 3 ? ' is-urgent' : '') + '"><span><b>' + u.monthLabel(d.ym) + 'の休み・出勤希望</b> 締切 ' + u.md(d.wish.due) + '・<b class="num">' + (left ? 'あと' + left + '日' : '今日まで') + '</b></span>' +
+      '<small>' + (n ? '出した：' + said + '・' : d.wish.none ? '「希望なし」で出しました・' : '') + '日付を押して出せます</small>' +
       (!n && !d.wish.none && !st.me.previewBy ? '<button type="button" class="link-btn" id="wm-none">この月は希望なしで出す</button>' : '') + '</div>';
   }
   function wishSend(body, msg) {
@@ -645,16 +662,17 @@ var SHIFT = (function () {
         render(el);
       });
     });
+    el.querySelectorAll('[data-ws]').forEach(function (b) { b.addEventListener('click', function () { keepNote(); st.wd.ws = b.dataset.ws; render(el); }); });
     if (q('#wm-note')) q('#wm-note').addEventListener('input', function () {
       keepNote();
       var sv = q('#wm-save'), d = st.data, cur = (d.myWish || {})[st.wd.date] || '';
-      var value = st.wd.k === 'off' ? '休' : st.wd.k === 'half' && st.wd.ng.length ? u.wishText(st.wd.ng) : '';
-      if (sv && !st.wbusy) sv.disabled = value === cur && st.wd.note === (((d.wish.notes || {})[st.wd.date]) || '') || (st.wd.k === 'half' && !st.wd.ng.length);
+      if (sv && !st.wbusy) sv.disabled = (draftValue(st.wd) === cur && st.wd.note === (((d.wish.notes || {})[st.wd.date]) || '')) || incomplete(st.wd);
     });
     if (q('#wm-save')) q('#wm-save').addEventListener('click', function () {
       keepNote();
       var dr = st.wd, cur = (st.data.myWish || {})[dr.date] || '';
-      var value = dr.k === 'off' ? '休' : dr.k === 'half' ? u.wishText(dr.ng) : '';
+      if (incomplete(dr)) { APP.toast(dr.k === 'want' ? '入りたい時間帯を選んでください' : '出られない時間帯を選んでください', true); return; }
+      var value = draftValue(dr);
       wishSend({ date: dr.date, value: value, note: dr.note, expect: cur }, value ? u.md(dr.date) + 'の希望を出しました' : '取り消しました');
     });
     if (q('#wm-none')) q('#wm-none').addEventListener('click', function () { wishSend({ none: true }, '「希望なし」で出しました'); });
