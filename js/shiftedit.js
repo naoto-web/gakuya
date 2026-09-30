@@ -58,6 +58,7 @@ var EDIT = (function () {
   function wishNote(date, name, s) {
     var w = (((data().edit || {}).wish || {})[date] || {})[name];
     var hi = u.wishInfo(w);
+    if (hi && hi.k === 'want') return '🙋入りたい（' + hi.slot + '）';   // 10/1 出勤希望
     if (!hi || hi.k !== 'half') return '';
     if (!hi.ng) return hi.raw;
     var hit = slotQ(s).filter(function (q) { return hi.ng.indexOf(q) >= 0; });
@@ -141,8 +142,10 @@ var EDIT = (function () {
     var ok = [], ng = [];
     members.forEach(function (m) {
       var why = reasons(date, s, m.name);
-      (why.length ? ng : ok).push({ m: m, why: why });
+      (why.length ? ng : ok).push({ m: m, why: why, want: u.wantsSlot(u.wishInfo(wishOf(date, m.name)), s) });
     });
+    // 🆕10/1 この枠に「入りたい」（出勤希望）の人を候補の先頭に（並びは元の順のまま）
+    ok = ok.filter(function (x) { return x.want; }).concat(ok.filter(function (x) { return !x.want; }));
     // 半休の人の札＝この枠の出られる側だけ塗る（9/29 Naoto「詳細を押したときの名前バッジも」）。候補外（灰色）はそのまま
     function halfPick(name, c, isNg) {
       if (isNg) return '';
@@ -154,7 +157,7 @@ var EDIT = (function () {
       var c = x.m.color || '#9aa0aa';
       var n = countOf(x.m.name), lim = x.m.limit;
       var note = isNg ? x.why.join('・') : wishNote(date, x.m.name, s);
-      return '<button type="button" class="pick' + (isNg ? ' is-ng' : '') + (x.m.name === cur ? ' is-cur' : '') + '" data-pick="' + u.esc(x.m.name) + '" style="--mc:' + c + halfPick(x.m.name, c, isNg) + '">' +
+      return '<button type="button" class="pick' + (isNg ? ' is-ng' : '') + (x.want && !isNg ? ' is-want' : '') + (x.m.name === cur ? ' is-cur' : '') + '" data-pick="' + u.esc(x.m.name) + '" style="--mc:' + c + halfPick(x.m.name, c, isNg) + '">' +
         '<span class="pick-name">' + u.esc(x.m.name) + '</span>' +
         '<span class="pick-cnt num">' + n + (lim ? '/' + lim : '') + '</span>' +
         (note ? '<span class="pick-why">' + u.esc(note) + '</span>' : '') + '</button>';
@@ -239,20 +242,25 @@ var EDIT = (function () {
   function openWish(date, opt) {
     var editing = '';   // 半休を選んでいる人
     var pick = [];      // その人のNGの区分（0〜3）
+    var wanting = '';   // 🆕10/1 出勤希望の時間帯を選んでいる人
     function body() {
-      return head(dateLabel(date) + '　休み希望', '押すとその場で保存します。「休」「撮影」の人はシフトの候補外。半休は出られない所を選んで保存') +
+      return head(dateLabel(date) + '　休み・出勤希望', '押すとその場で保存します。「休」「撮影」の人はシフトの候補外。半休は出られない所を選んで保存。「出」＝入りたい（候補の先頭に並ぶ）') +
         '<div class="wish-edit">' + H.members().map(function (m) {
           var v = wishOf(date, m.name);
           var info = u.wishInfo(v);
           var k = info ? info.k : 'none';
           var b = function (key, label) {
-            return '<button type="button" data-wk="' + key + '" data-wn="' + u.esc(m.name) + '" aria-pressed="' + (k === key || (key === 'half' && editing === m.name)) + '" class="wk-btn wk-b-' + key + '">' + label + '</button>';
+            return '<button type="button" data-wk="' + key + '" data-wn="' + u.esc(m.name) + '" aria-pressed="' + (k === key || (key === 'half' && editing === m.name) || (key === 'want' && wanting === m.name)) + '" class="wk-btn wk-b-' + key + '">' + label + '</button>';
           };
           // 札は「半」だけ。中身（例：ミッドのみ可）は行の下に出す（札に書くと切れる）
           var halfLabel = '半';
           return '<div class="we-row"><span class="wa-who" style="--mc:' + (m.color || '#9aa0aa') + '">' + u.esc(m.name) + '</span>' +
-            '<span class="seg we-seg">' + b('none', 'なし') + b('off', '休') + b('half', halfLabel) + b('shoot', '撮影') + '</span>' +
+            '<span class="seg we-seg">' + b('none', 'なし') + b('off', '休') + b('half', halfLabel) + b('shoot', '撮影') + b('want', '出') + '</span>' +
             (k === 'half' && editing !== m.name ? '<div class="we-say">' + u.esc(info.say) + '</div>' : '') +
+            (k === 'want' && wanting !== m.name ? '<div class="we-say">' + u.esc(info.label) + '</div>' : '') +
+            (wanting === m.name ? '<div class="we-half"><span class="we-cap">入りたい時間帯</span><span class="we-q">' + ['昼', '夜', 'どちらでも'].map(function (s) {
+              return '<button type="button" class="q-btn" data-wwant="' + s + '" data-wn="' + u.esc(m.name) + '" aria-pressed="' + (info && info.slot === s) + '">' + s + '</button>';
+            }).join('') + '</span></div>' : '') +
             (editing === m.name ? '<div class="we-half"><span class="we-cap">出られない所を押す' +
               (pick.length ? '　→ <b>' + u.esc(pick.length === 4 ? '休（終日NG）' : u.halfSay(pick)) + '</b>' : '') + '</span><span class="we-q">' + u.Q4.map(function (q, i) {
               return '<button type="button" class="q-btn q-' + i + '" data-q="' + i + '" aria-pressed="' + (pick.indexOf(i) >= 0) + '">' + q + '</button>';
@@ -267,14 +275,20 @@ var EDIT = (function () {
         b.addEventListener('click', function () {
           var n = b.dataset.wn, key = b.dataset.wk;
           if (key === 'half') {
+            wanting = '';
             if (editing === n) { editing = ''; } else {
               editing = n;
               var hi = u.wishInfo(wishOf(date, n));
               pick = hi && hi.k === 'half' && hi.ng ? hi.ng.slice() : [];
             }
-          } else { editing = ''; setWish(date, n, key === 'off' ? '休' : key === 'shoot' ? '撮影' : ''); }
+          } else if (key === 'want') {
+            editing = ''; wanting = wanting === n ? '' : n;
+          } else { editing = ''; wanting = ''; setWish(date, n, key === 'off' ? '休' : key === 'shoot' ? '撮影' : ''); }
           redraw();
         });
+      });
+      el.querySelectorAll('[data-wwant]').forEach(function (b) {
+        b.addEventListener('click', function () { setWish(date, b.dataset.wn, u.wantText(b.dataset.wwant)); wanting = ''; redraw(); });
       });
       el.querySelectorAll('[data-q]').forEach(function (b) {
         b.addEventListener('click', function () {
@@ -299,8 +313,8 @@ var EDIT = (function () {
   var OPS = [
     { op: 'fillnight', label: '🌙夜枠に一括入力', desc: '選んだ人を、休み希望の日以外の夜枠に全部入れます（空いている枠だけ・先に何日入るかを見せます）', pick: true, dry: true, where: '夜枠' },
     { op: 'fillday', label: '☀️昼枠に一括入力', desc: '選んだ人を、休み希望の日以外の昼枠に全部入れます（空いている枠だけ・先に何日入るかを見せます）', pick: true, dry: true, where: '昼枠' },
-    { op: 'fillgradeday', label: '🏆グレード昼に一括入力', desc: 'メモにグレード名がある昼開催の日の昼枠に、選んだ人を入れます（休み希望の日以外・空いている枠だけ）', pick: true, dry: true, where: 'グレード昼の枠' },
-    { op: 'fillgradenight', label: '🏆グレード夜に一括入力', desc: 'メモのグレード名が「夜」で終わる日（夜開催）の夜枠に、選んだ人を入れます（休み希望の日以外・空いている枠だけ）', pick: true, dry: true, where: 'グレード夜の枠' },
+    { op: 'fillgradeday', label: '🏆グレード昼に一括入力', desc: 'グレード開催（開催カレンダー）の昼開催の日の昼枠に、選んだ人を入れます（休み希望の日以外・空いている枠だけ）', pick: true, dry: true, where: 'グレード昼の枠' },
+    { op: 'fillgradenight', label: '🏆グレード夜に一括入力', desc: 'グレード開催（開催カレンダー）のナイター・ミッドの日の夜枠に、選んだ人を入れます（休み希望の日以外・空いている枠だけ）', pick: true, dry: true, where: 'グレード夜の枠' },
     // 9/29 Naoto「一括入力した人をまとめて確定させたい」＝人ごとにまとめて🔒
     { op: 'lockperson', label: '🔒この人の枠を全部確定', desc: '選んだ人がこの月に入っている枠を、全部🔒確定にします', pick: true },
     { op: 'unlockperson', label: '🔓この人の確定を全部外す', desc: '選んだ人の🔒確定を、この月の分だけ全部外します（名前は残ります）', pick: true },
