@@ -125,7 +125,7 @@ var SHARE = (function () {
   function requestsBox(d) {
     return '<div class="card sh-req"><h3>プログラマーへの要望</h3>' +
       // 🔄10/1 Naoto：例を3行で（&#10;＝入力欄の中の改行）
-      '<textarea id="sh-req" class="date-input sh-ta" rows="5" maxlength="2000" placeholder="例：&#10;追加してほしいアプリの機能（自分だけ追加でも可）&#10;追加してほしいOBSの機能・的中演出&#10;アプリやOBSの不具合等"></textarea>' +
+      '<textarea id="sh-req" class="date-input sh-ta" rows="4" maxlength="2000" placeholder="例：&#10;追加してほしいアプリの機能（自分だけ追加でも可）&#10;追加してほしいOBSの機能・的中演出&#10;アプリやOBSの不具合等"></textarea>' +
       '<div class="sh-row"><button type="button" class="btn" id="sh-reqsend"' + (st.busy ? ' disabled' : '') + '>要望を出す</button></div>' +
       (d.requests.length ? '<ul class="sh-reqlist">' + d.requests.map(function (r) {
         return '<li><div class="sh-reqhead"><span class="sh-st sh-st-' + d.reqStates.indexOf(r.state) + '">' + u.esc(r.state) + '</span><small>' + (d.admin ? u.esc(r.who) + '・' : '') + when(r.at) + '</small></div>' +
