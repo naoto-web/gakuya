@@ -134,7 +134,8 @@ var CARD = (function () {
 
   function narabiChips(r) {
     if (!r.lines || !r.lines.length) return '';
-    return '<div class="rc-narabi"><span class="rc-cap">並び</span>' + r.lines.map(function (line) {
+    // 発走後に keirin.jp から消えた並びは、GASが覚えていた発走前の予想（r.kept）
+    return '<div class="rc-narabi"><span class="rc-cap">並び' + (r.kept ? '<small class="rc-kept">発走前の予想</small>' : '') + '</span>' + r.lines.map(function (line) {
       return '<span class="rc-ln">' + line.map(function (pos) {
         return pos.length > 1 ? '<span class="rc-seri">' + pos.slice().reverse().map(function (n) { return car(n, 'sm'); }).join('<i>=</i>') + '</span>' : car(pos[0], 'sm');
       }).join('') + '</span>';
@@ -194,7 +195,7 @@ var CARD = (function () {
       '<div class="rc-race-sub num">発走 ' + u.esc(r.start || '—') + (r.den ? '・締切 ' + u.esc(r.den) : '') + (r.lineType ? '・' + u.esc(r.lineType) : '') + '</div>' +
       narabiChips(r) + '</div>' +
       '<div class="card rc-table">' + table(r) +
-      (!r.lines || !r.lines.length ? '<p class="fresh">並び予想がないので車番順です' + (res ? '（発走したレースは keirin.jp から並びが消えます）' : '') + '。</p>' : '') + '</div>' +
+      (!r.lines || !r.lines.length ? '<p class="fresh">並び予想がないので車番順です' + (res ? '（発走前に並びを覚えられなかったレースです）' : '') + '。</p>' : '') + '</div>' +
       (res ? resultBox(res) : oddsBox(r.no)) +
       '<p class="fresh">出走表・オッズ・結果＝keirin.jp（' + hm(d.at) + '取得）。得点・B・H・S の赤＝レース内1位・青＝2位。</p>';
   }
