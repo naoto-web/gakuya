@@ -1088,6 +1088,19 @@ html.rc-lock, html.rc-lock body { overflow: hidden; }
 .wa-sheet .wa-body > .title-row .screen-title { display: none; }
 .wa-body { display: grid; gap: 12px; }
 .toast { z-index: 70 !important; }
+/* 10/1 出勤希望（入りたい）＝緑。字でも「出」「入りたい」と分かる */
+.wm-want, .wk-want { background: #2e8b57; }
+.wm-kinds { grid-template-columns: repeat(4, 1fr) !important; }
+.we-seg { grid-template-columns: 0.9fr 0.9fr 1.1fr 1.1fr 0.9fr !important; }
+.wa-sum { grid-template-columns: 1fr !important; }
+.wa-sum-row .wa-n { min-width: 42px; }
+.wm-k.wm-k-want.is-on { background: #2e8b57; border-color: #2e8b57; }
+.wm-q3 { grid-template-columns: repeat(3, 1fr); }
+.wm-qb.is-want { background: #e3f4ea; border-color: #2e8b57; color: #1f6b41; }
+.wa-chip.wa-want { border-style: dashed; }
+.pick.is-want { box-shadow: inset 0 0 0 2px #2e8b57; }
+.wk-b-want[aria-pressed="true"] { background: #2e8b57 !important; color: #fff !important; border-color: #2e8b57 !important; }
+.wl-want { color: #1f6b41; }
 .wm-mark { display: inline-block; font-size: 11px; font-weight: 700; line-height: 1; padding: 3px 4px; border-radius: 4px; color: #fff; font-style: normal; }
 .wm-off { background: var(--off); }
 .wm-half { background: var(--half); }
