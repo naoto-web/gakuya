@@ -67,7 +67,7 @@ var WISHADMIN = (function () {
     var colorOf = function (n) { var m = members.filter(function (x) { return x.name === n; })[0]; return (m && m.color) || '#9aa0aa'; };
     // 人ごとの件数（休・半・撮影）
     var cnt = {};
-    members.forEach(function (m) { cnt[m.name] = { off: 0, half: 0, shoot: 0 }; });
+    members.forEach(function (m) { cnt[m.name] = { off: 0, half: 0, shoot: 0, want: 0 }; });
     Object.keys(wish).forEach(function (date) {
       Object.keys(wish[date]).forEach(function (n) { if (cnt[n]) cnt[n][kind(wish[date][n])]++; });
     });
@@ -80,6 +80,7 @@ var WISHADMIN = (function () {
     var clash = function (date, n) {
       var r = rowsBy[date], i = u.wishInfo(wish[date][n]);
       if (!r || !i) return false;
+      if (i.k === 'want') return false;   // 10/1 出勤希望＝入っていても違反ではない
       if (i.k !== 'half') return r.day.concat(r.night).indexOf(n) >= 0;
       if (!i.ng) return false;
       var full = function (qs) { return qs.every(function (q) { return i.ng.indexOf(q) >= 0; }); };
@@ -100,7 +101,8 @@ var WISHADMIN = (function () {
         return '<div class="wa-sum-row"><span class="wa-who" style="--mc:' + colorOf(m.name) + '">' + u.esc(m.name) + '</span>' +
           '<span class="wa-n' + (c.off ? '' : ' is-zero') + '"><i class="wk wk-off">休</i>' + c.off + '</span>' +
           '<span class="wa-n' + (c.half ? '' : ' is-zero') + '"><i class="wk wk-half">半</i>' + c.half + '</span>' +
-          '<span class="wa-n' + (c.shoot ? '' : ' is-zero') + '"><i class="wk wk-shoot">撮影</i>' + c.shoot + '</span></div>';
+          '<span class="wa-n' + (c.shoot ? '' : ' is-zero') + '"><i class="wk wk-shoot">撮影</i>' + c.shoot + '</span>' +
+          '<span class="wa-n' + (c.want ? '' : ' is-zero') + '"><i class="wk wk-want">出</i>' + c.want + '</span></div>';
       }).join('') + '</div>' +
       (dates.length ? '<div class="card wa-list">' + dates.map(function (date) {
         // 並び＝休→半→撮影、同じ種類の中はメンバーの並び
