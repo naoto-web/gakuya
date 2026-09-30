@@ -66,7 +66,9 @@ var API = (function () {
   return {
     me: function () { return get('me'); },
     shift: function (ym) { return get('shift', { ym: ym }); },
-    sales: function (ym) { return get('sales', { ym: ym }); },   // 実績タブ（今は管理者だけ・sales.js）
+    sales: function (ym) { return get('sales', { ym: ym }); },   // 実績タブ（配信者は本人分だけ・sales.js）
+    card: function (date, place) { return get('card', { date: date, place: place }); },             // 出走表（card.js）
+    odds: function (date, place, race) { return get('odds', { date: date, place: place, race: race }); },  // 3連単オッズ（card.js）
     publish: function (ym, on) { return post('publish', { ym: ym, on: on }); },
     // シフトの編集（管理者だけ）。expect＝画面で見ていた中身（シートで変わっていたら書かずに conflict）
     setSlot: function (ym, date, slot, value, expect) { return post('set', { ym: ym, date: date, slot: slot, value: value, expect: expect }); },
