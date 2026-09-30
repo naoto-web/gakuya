@@ -521,9 +521,11 @@ var SHIFT = (function () {
       '<button type="button" data-mode="all" aria-pressed="' + all + '">全体</button></span>' +
       '<span class="title-aside">' + (EDIT.pending() ? '<b class="saving">保存中…</b>' : st.loading ? '読み込み中…' : at) + ' <button type="button" class="link-btn" id="reload">最新にする</button></span></div>' +
       '<div class="seg seg-sm" role="group" aria-label="月">' + shown.map(function (m) {
-        return '<button type="button" data-ym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + (isAdmin() && !m.published ? '<small class="seg-note">非公開</small>' : '') + '</button>';
+        return '<button type="button" data-ym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + (!m.published ? '<small class="seg-note">' + (isAdmin() ? '非公開' : '未公開') + '</small>' : '') + '</button>';
       }).join('') + '</div>' +
       (isAdmin() ? publishBar(d) : '') +
+      // 🔄10/1 配信者にも未公開の月のカレンダー（開催・Gバッジ）を見せる。誰がいつ出るかはGASが空で返す
+      (!isAdmin() && !d.published ? '<p class="sub unpub-note">' + u.monthLabel(d.ym) + 'のシフトはまだ公開されていません（開催とグレードだけ見られます）</p>' : '') +
       // 💡次に決める枠（管理者の編集中だけ・1行）
       (EDIT.can() && editOn() && EDIT.suggestBar && !st.confirm ? EDIT.suggestBar() : '') +
       // 選んだ日の枠＝見ている人（管理者は強調中の人）のメンバーカラー（9/29 Naoto）
