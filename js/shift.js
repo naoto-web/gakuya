@@ -75,7 +75,7 @@ var SHIFT = (function () {
       prefetch(d);
     }).catch(function (e) {
       if (!st.data || (st.want && st.ym !== st.want)) {
-        st.err = e.code === 'not published' ? 'この月はまだ公開されていません' : '読み込めませんでした。電波のよいところで「最新にする」を押してください';
+        st.err = e.code === 'not published' ? 'この月のシフトは作成中です' : '読み込めませんでした。電波のよいところで「最新にする」を押してください';
         if (st.want && st.ym !== st.want) st.data = null;
       } else {
         APP.toast('最新を読めませんでした。' + u.pad(st.fetchedAt.getHours()) + ':' + u.pad(st.fetchedAt.getMinutes()) + '時点を表示しています', true);
@@ -542,14 +542,15 @@ var SHIFT = (function () {
     var label = u.monthLabel(d.ym);
     if (st.confirm) {
       return '<div class="card pub-bar is-confirm">' +
-        '<p><b>' + label + 'のシフトを' + (d.published ? '非公開に戻しますか？' : '配信者に公開しますか？') + '</b></p>' +
-        '<p class="sub">' + (d.published ? '配信者の画面からこの月が消えます。' : '配信者全員の画面に、この月のシフトがそのまま表示されます。公開したあとにシート側で直した分も、次に開いたときに反映されます。') + '</p>' +
-        '<div class="btn-row"><button type="button" class="btn ghost" id="pub-no">やめる</button><button type="button" class="btn" id="pub-yes">' + (d.published ? '非公開に戻す' : '公開する') + '</button></div></div>';
+        '<p><b>' + label + 'のシフトを' + (d.published ? '作成中に戻しますか？' : 'みんなに発表しますか？') + '</b></p>' +
+        '<p class="sub">' + (d.published ? '配信者の画面では、この月は開催とグレードだけになります（名前は消えます）。' : '配信者全員の画面に、この月のシフトがそのまま表示されます。発表したあとに直した分も、次に開いたときに反映されます。') + '</p>' +
+        '<div class="btn-row"><button type="button" class="btn ghost" id="pub-no">やめる</button><button type="button" class="btn" id="pub-yes">' + (d.published ? '作成中に戻す' : '発表する') + '</button></div></div>';
     }
-    // 🔑1行に収める（公開の状態＋ボタン＋強調する人）＝1画面に収めるため（9/29 Naoto「スクロール無しで全部表示」）
+    // 🔑1行に収める（発表の状態＋ボタン＋強調する人）＝1画面に収めるため（9/29 Naoto「スクロール無しで全部表示」）
+    // 🔄10/1 呼び名＝「作成中／発表済み」（Naoto A案・発表後も調整で変わるので「確定」「決定」は強い）。中身は今までの公開・非公開と同じ
     return '<div class="admin-bar">' +
-      (d.published ? '<span class="pill ok">公開中</span>' : '<span class="pill dim">非公開</span>') +
-      '<button type="button" class="btn ' + (d.published ? 'ghost' : '') + ' btn-sm" id="pub-ask">' + (d.published ? '非公開に戻す' : '配信者に公開') + '</button>' +
+      (d.published ? '<span class="pill ok">発表済み</span>' : '<span class="pill dim">作成中</span>') +
+      '<button type="button" class="btn ' + (d.published ? 'ghost' : '') + ' btn-sm" id="pub-ask">' + (d.published ? '作成中に戻す' : 'みんなに発表') + '</button>' +
       (EDIT.can() && editOn() ? '<button type="button" class="btn ghost btn-sm" id="bulk-menu" aria-label="月まとめての操作（自動入力・並び替え・リセット）">一括▾</button>' : '') +
       // 🔄10/1 休み希望（全員の一覧・届いた希望・まだ出していない人）＝前の休み希望タブの中身を全画面で（wishadmin.js）
       (window.WISHADMIN && WISHADMIN.can(st.me) ? '<button type="button" class="btn ghost btn-sm wa-open" id="wa-open">休み希望' + (WISHADMIN.unseen() ? '<span class="badge-in">' + WISHADMIN.unseen() + '</span>' : '') + '</button>' : '') +
@@ -568,7 +569,7 @@ var SHIFT = (function () {
     }
     var months = d.months || [];
     if (!months.length || !d.rows || !d.rows.length) {
-      el.innerHTML = '<div class="title-row"><h1 class="screen-title">シフト</h1></div><div class="card"><p>まだ公開されたシフトはありません。</p><p class="sub">管理者が公開すると、ここに表示されます。</p><button type="button" class="btn ghost" id="reload">最新にする</button></div>';
+      el.innerHTML = '<div class="title-row"><h1 class="screen-title">シフト</h1></div><div class="card"><p>まだ発表されたシフトはありません。</p><p class="sub">管理者が発表すると、ここに表示されます。</p><button type="button" class="btn ghost" id="reload">最新にする</button></div>';
       bind(el);
       return;
     }
@@ -597,11 +598,11 @@ var SHIFT = (function () {
       '<button type="button" data-mode="all" aria-pressed="' + all + '">全体</button></span>' +
       '<span class="title-aside">' + (EDIT.pending() ? '<b class="saving">保存中…</b>' : st.loading ? '読み込み中…' : at) + ' <button type="button" class="link-btn" id="reload">最新にする</button></span></div>' +
       '<div class="seg seg-sm" role="group" aria-label="月">' + shown.map(function (m) {
-        return '<button type="button" data-ym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + (!m.published ? '<small class="seg-note">' + (isAdmin() ? '非公開' : '未公開') + '</small>' : '') + '</button>';
+        return '<button type="button" data-ym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + (!m.published ? '<small class="seg-note">作成中</small>' : '') + '</button>';
       }).join('') + '</div>' +
       (isAdmin() ? publishBar(d) : '') +
       // 🔄10/1 配信者にも未公開の月のカレンダー（開催・Gバッジ）を見せる。誰がいつ出るかはGASが空で返す
-      (!isAdmin() && !d.published ? '<p class="sub unpub-note">' + u.monthLabel(d.ym) + 'のシフトはまだ公開されていません（開催とグレードだけ見られます）</p>' : '') +
+      (!isAdmin() && !d.published ? '<p class="sub unpub-note">' + u.monthLabel(d.ym) + 'のシフトは作成中です（開催とグレードだけ見られます）</p>' : '') +
       wishBar(d) +
       // 💡次に決める枠（管理者の編集中だけ・1行）
       (EDIT.can() && editOn() && EDIT.suggestBar && !st.confirm ? EDIT.suggestBar() : '') +
@@ -688,7 +689,7 @@ var SHIFT = (function () {
       API.publish(st.ym, on).then(function (d) {
         st.data = d; st.confirm = false;
         saveCache(d, new Date());
-        APP.toast(on ? u.monthLabel(d.ym) + 'を配信者に公開しました' : u.monthLabel(d.ym) + 'を非公開に戻しました');
+        APP.toast(on ? u.monthLabel(d.ym) + 'のシフトを発表しました' : u.monthLabel(d.ym) + 'を作成中に戻しました');
         render(el);
       }).catch(function () {
         APP.toast('切り替えられませんでした。もう一度お試しください', true);
