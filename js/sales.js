@@ -102,6 +102,16 @@ var SALES = (function () {
     s.nRate = s.nSettled ? s.nHit / s.nSettled * 100 : null;
     return s;
   }
+  // 見出しの期間＝その月に予想データがある最初の日〜最後の日（チーム全体）。🔄9/30 Naoto「9月なのにスタートが8/14」
+  //   ＝以前は「8/14〜」（データが残っている始まり）を全部の月に出していて、9月の成績が8/14からに読めた
+  function hitRangeLabel(ym) {
+    var rows = (st.hits || {})[ym] || [];
+    if (!rows.length) return '・予想データは8/14から';
+    var days = rows.map(function (r) { return r[H.day]; });
+    var a = Math.min.apply(null, days), b = Math.max.apply(null, days), m = +ym.slice(5);
+    var first = Object.keys(st.hits).filter(function (k) { return (st.hits[k] || []).length; }).sort()[0] === ym;
+    return '・' + m + '/' + a + '〜' + m + '/' + b + (first && a > 1 ? '（予想データは' + m + '/' + a + 'から）' : '');
+  }
   function pct1(v) { return v == null ? '—' : v.toFixed(1) + '%'; }
 
   // ── 購入者数（9/30 Naoto③）＝人数だけ（名前は持っていない）。🔄同日 配信者にも本人分は見せる（本人のnoteから数えた本人の客の人数）＝GASが本人の行だけ返す ──
@@ -243,7 +253,7 @@ var SALES = (function () {
       '<div class="s-k"><small>出勤日数</small><b class="num">' + s.nd + '日</b><small>昼' + s.nD + '・夜' + s.nN + '・G' + s.nG + '</small>' + dl(p && delta(s.nd, p.nd, 'day')) + '</div>' +
       '<div class="s-k"><small>1出勤あたり</small><b class="num">' + per(s.total, s.nd) + '</b><small>記事' + s.arts + '本・' + u.yen(s.n) + '件</small>' + dl(p && s.nd && p.nd && delta(s.total / s.nd, p.total / p.nd, 'pct')) + '</div></div>' +
       // 予想の成績（配信コンソールの予想・8/14〜）
-      '<div class="card s-kpi s-kpi3" style="--mc:' + colorOf(who) + '"><div class="s-k3-title">予想の成績<small>配信コンソールの予想・8/14〜' + (hs ? '・' + u.monthLabel(st.ym) + hs.last + '日まで' : '') + '</small></div>' +
+      '<div class="card s-kpi s-kpi3" style="--mc:' + colorOf(who) + '"><div class="s-k3-title">予想の成績<small>配信コンソールの予想' + hitRangeLabel(st.ym) + '</small></div>' +
       (hs ? '<div class="s-k"><small>的中率</small><b class="num">' + pct1(hs.rate) + '</b><small>' + hs.hit + '/' + hs.settled + 'レース</small>' + dlH(hp && delta(hs.rate, hp.rate, 'pt')) + '</div>' +
         '<div class="s-k"><small>回収率</small><b class="num">' + pct1(hs.back) + '</b><small>回収 ' + yen(hs.ref) + '</small>' + dlH(hp && delta(hs.back, hp.back, 'pt')) + '</div>' +
         '<div class="s-k"><small>note記事の的中率</small><b class="num">' + pct1(hs.nRate) + '</b><small>' + hs.nHit + '/' + hs.nSettled + 'レース</small>' + dlH(hp && delta(hs.nRate, hp.nRate, 'pt')) + '</div>'
