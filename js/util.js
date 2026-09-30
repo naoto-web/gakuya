@@ -85,6 +85,9 @@
     wishInfo: (v) => {
       v = String(v || '').trim();
       if (!v) return null;
+      // 🆕10/1 出勤希望（Yの了承）＝シートに「出（昼）」「出（夜）」「出（どちらでも）」。「休」の字を含まない＝候補外にならない
+      const want = /^出（(昼|夜|どちらでも)）$/.exec(v);
+      if (want) return { k: 'want', slot: want[1], label: '入りたい（' + want[1] + '）', raw: v };
       if (/撮影/.test(v)) return { k: 'shoot', label: '撮影' };
       if (/休/.test(v) && !/^半/.test(v)) return { k: 'off', label: '休' };
       const S = OKL.u.Q4S, F = OKL.u.Q4;
@@ -130,7 +133,10 @@
         (ngColor ? '' : ', repeating-linear-gradient(135deg, #ffffff 0 4px, #eeede9 4px 6px)');
     },
     wishText: (ng) => ng && ng.length ? '半（' + ng.slice().sort().map((i) => OKL.u.Q4S[i]).join('・') + 'NG）' : '',
-    WISH_ORDER: { off: 0, half: 1, shoot: 2 },
+    WISH_ORDER: { off: 0, half: 1, shoot: 2, want: 3 },
+    wantText: (slot) => '出（' + slot + '）',
+    // その枠（s＝0〜3・昼①②夜①②）に入りたい希望か
+    wantsSlot: (info, s) => !!(info && info.k === 'want' && (info.slot === 'どちらでも' || (info.slot === '昼') === (s < 2))),
     // 同じ種から毎回同じ乱数（サンプルを安定させる）
     rng: (seed) => () => {
       seed = (seed + 0x6d2b79f5) | 0;
