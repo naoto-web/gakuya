@@ -153,7 +153,9 @@ var SHIFT = (function () {
       var shoot = /撮影/.test(wishFor(r.date, me)) ? '<span class="sb-shoot">撮影</span>' : '';
       // 🔄10/1 休み希望（休・半）もマスに出す＝出番の無い日（未公開の月・休みを出した日）に「休」「半」
       var wi = u.wishInfo(wishFor(r.date, me));
-      var wmark = wi && wi.k !== 'shoot' ? '<b class="wm-mark wm-' + wi.k + '">' + (wi.k === 'off' ? '休' : wi.k === 'want' ? '出' : '半') + '</b>' : '';
+      //   🔄10/1 Naoto「シフトが確定したあとは『出』『休』バッジは非表示」＝配信者は公開した月（受付中を除く）では出さない
+      var hideW = !isAdmin() && st.data.published && !(st.data.wish && st.data.wish.open);
+      var wmark = wi && wi.k !== 'shoot' && !hideW ? '<b class="wm-mark wm-' + wi.k + '">' + (wi.k === 'off' ? '休' : wi.k === 'want' ? '出' : '半') + '</b>' : '';
       if (!slot) return shoot || wmark;
       // 通し＝相方を上＝昼・下＝夜の2段で（マスも上下で昼の黄／夜の藍・9/30 Naoto「上下2分割」）
       if (slot === '通し') {
@@ -459,7 +461,8 @@ var SHIFT = (function () {
   // ── 🔄10/1 配信者の休み希望＝シフトのタブで出す（Naoto「休み希望タブいる？カレンダーを触って休み希望に」）──
   //   受付中の月（締切＝前月20日・GASの d.wish）だけ。日付の詳細の一番下に［なし｜休｜半休］＋時間帯＋ひとこと
   //   書き先＝シフト表の休み希望欄（本人の列）・ひとことは記録のシート（管理者が見る）。締切後は表示だけ
-  function canWish() { var d = st.data; return !isAdmin() && d && d.wish && d.wish.can; }
+  // 🔄10/1 公開した（シフトが確定した）月は、受付中でなければ欄ごと出さない（Naoto）
+  function canWish() { var d = st.data; return !isAdmin() && d && d.wish && d.wish.can && (d.wish.open || !d.published); }
   function myWishBox(date) {
     var d = st.data, cur = (d.myWish || {})[date] || '', info = u.wishInfo(cur);
     var note = ((d.wish.notes || {})[date]) || '';
