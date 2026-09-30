@@ -39,6 +39,8 @@ var APP = (function () {
     if (t.id === 'shift') { SHIFT.render(); return; }
     if (t.id === 'share') { SHARE.render(); return; }
     // 実績＝note売上（sales.js・9/30〜）。見せてよいかはGASが決める（配信者は本人分だけ・閉じている間は準備中）
+    //   🆕10/1 管理者だけ［売上｜出演］＝出演ログ（presence.js）
+    if (t.id === 'stats' && window.PRESENCE && PRESENCE.active()) { PRESENCE.render(); return; }
     if (t.id === 'stats' && window.SALES && SALES.can(me)) { SALES.render(); return; }
     view.innerHTML = '<h1 class="screen-title">' + t.label + '</h1><div class="card"><span class="pill dim" style="justify-self:start">準備中</span><p>' + t.soon + '</p></div>';
   }
