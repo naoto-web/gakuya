@@ -61,7 +61,7 @@ var SALES = (function () {
         if (inD || inN) s.days[d] = 1;
         if (inD) s.dayD[d] = 1;
         if (inN) s.dayN[d] = 1;
-        if (r.grade && ((r.grade.slot === '夜' && inN) || (r.grade.slot !== '夜' && inD))) s.dayG[d] = 1;
+        [r.grade, r.grade2].forEach(function (g) { if (g && ((g.slot === '夜' && inN) || (g.slot !== '夜' && inD))) s.dayG[d] = 1; });   // 10/1 昼夜両方の日は grade2
       });
     }
     s.total = s.gross + s.tip;
