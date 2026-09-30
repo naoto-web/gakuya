@@ -407,7 +407,11 @@ var SHIFT = (function () {
   function venues(date, slot) {
     var list = (st.data && st.data.races && st.data.races[date]) || [];
     list = list.filter(function (x) { return slot === '昼' ? KUBUN_ORDER[x.k] <= 1 : KUBUN_ORDER[x.k] >= 2; })
-      .sort(function (a, b) { return (KUBUN_ORDER[a.k] - KUBUN_ORDER[b.k]) || (a.v < b.v ? -1 : 1); });
+      // 🔄10/1 Naoto「防府の方が早いのに右」＝同じ区分の中は1Rの発走が早い順（t＝GASが keirin.jp から覚えた時刻）。時刻が分からない場は後ろで場名の順
+      .sort(function (a, b) {
+        return (KUBUN_ORDER[a.k] - KUBUN_ORDER[b.k]) || ((a.t ? 0 : 1) - (b.t ? 0 : 1)) ||
+          (a.t && b.t && a.t !== b.t ? (a.t < b.t ? -1 : 1) : 0) || (a.v < b.v ? -1 : 1);
+      });
     if (!list.length) return '';
     // 🔄9/29 Naoto「モーニング、デイごとに改行、ナイター、ミッドナイトごとに改行」＝区分ごとに1行
     var rowsK = [];
