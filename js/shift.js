@@ -597,6 +597,8 @@ var SHIFT = (function () {
       '<button type="button" data-mode="me" aria-pressed="' + !all + '">個人</button>' +
       '<button type="button" data-mode="all" aria-pressed="' + all + '">全体</button></span>' +
       '<span class="title-aside">' + (EDIT.pending() ? '<b class="saving">保存中…</b>' : st.loading ? '読み込み中…' : at) + ' <button type="button" class="link-btn" id="reload">最新にする</button></span></div>' +
+      // 🆕10/1 通知をオンにする案内（オンにするか×で閉じるまで・push.js）
+      (window.PUSH ? PUSH.banner() : '') +
       '<div class="seg seg-sm" role="group" aria-label="月">' + shown.map(function (m) {
         return '<button type="button" data-ym="' + m.ym + '" aria-pressed="' + (m.ym === d.ym) + '">' + u.monthLabel(m.ym) + (!m.published ? '<small class="seg-note">作成中</small>' : '') + '</button>';
       }).join('') + '</div>' +
