@@ -1098,10 +1098,21 @@ html.rc-lock, html.rc-lock body { overflow: hidden; }
 .sh-ab.is-on { outline: 2px solid currentColor; }
 .sh-mine { font-size: 13px; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
 .sh-mine small { color: var(--fg-dim); }
-/* 回答の色：賛成＝緑・反対＝赤・どちらでも＝灰（字でも区別できる） */
-.sh-a-0 { color: #16804a; }
-.sh-a-1 { color: #c62828; }
-.sh-a-2 { color: #555a63; }
+/* 回答の色：賛成・了解＝緑／反対・難しい＝赤／どちらでも＝灰／完了＝紫（字でも区別できる） */
+.sh-a-ok { color: #16804a; }
+.sh-a-ng { color: #c62828; }
+.sh-a-mid { color: #555a63; }
+.sh-a-done { color: var(--accent); }
+/* 種類（相談・お願い） */
+.sh-types { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.sh-type { display: grid; justify-items: start; gap: 0; text-align: left; border: 1px solid var(--line); background: var(--sunk); border-radius: 8px; padding: 6px 10px; }
+.sh-type b { font-size: 15px; }
+.sh-type small { font-size: 11px; color: var(--fg-dim); }
+.sh-type.is-on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.sh-kind { font-size: 11px; font-weight: 700; border-radius: 4px; padding: 0 5px; background: var(--panel2, #ebe8e0); color: var(--fg-dim); white-space: nowrap; align-self: center; }
+.sh-kind.is-ask { background: var(--gold-soft); color: var(--gold); }
+.sh-done { font-size: 14px !important; color: var(--accent); }
+.sh-finish { justify-self: stretch; }
 .sh-a { font-weight: 700; }
 .sh-admin { border-top: 1px dashed var(--line2, var(--line)); padding-top: 6px; display: grid; gap: 4px; }
 .sh-admin-cap { font-size: 10px; font-weight: 700; color: var(--fg-faint); letter-spacing: .06em; }
