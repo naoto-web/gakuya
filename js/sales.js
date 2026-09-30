@@ -30,7 +30,8 @@ var SALES = (function () {
       if (!d.ym) return;
       // 出勤日数のためにその月のシフト（管理者は全月読める）。シートが無い月は失敗する＝売れた日で数える
       if (st.shift[d.ym] === undefined) {
-        return API.shift(d.ym).then(function (s) { st.shift[d.ym] = s.rows ? s : null; }, function () { st.shift[d.ym] = null; });
+        // 未公開の月（配信者には空のシフトが返る・10/1〜）は出勤に使わない＝売れた日で数える
+        return API.shift(d.ym).then(function (s) { st.shift[d.ym] = s.rows && !s.namesHidden ? s : null; }, function () { st.shift[d.ym] = null; });
       }
     }).catch(function (e) { st.err = e.code === 'notyet' ? 'notyet' : 'net'; })
       .then(function () { st.loading = false; draw(); });
@@ -171,7 +172,7 @@ var SALES = (function () {
       var have = (((SHIFT.state().data || {}).months) || []).map(function (m) { return m.ym; });
       var need = Object.keys(d.all).filter(function (ym) { return st.shift[ym] === undefined && have.indexOf(ym) >= 0; });
       return Promise.all(need.map(function (ym) {
-        return API.shift(ym).then(function (s) { st.shift[ym] = s.rows ? s : null; }, function () { st.shift[ym] = null; });
+        return API.shift(ym).then(function (s) { st.shift[ym] = s.rows && !s.namesHidden ? s : null; }, function () { st.shift[ym] = null; });
       }));
     }).catch(function () { st.allErr = true; }).then(function () { st.allLoading = false; draw(); });
   }
