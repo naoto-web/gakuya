@@ -1,7 +1,7 @@
 /* presence.js — 実績タブの「出演」（2026-10-01 Naoto「出演レポートもアプリに・まずは管理者だけ」→同日「配信者にも反映」）
    ・中身＝GASの app=presence（出演ログ＝アーカイブ映像から誰が席にいたか・1行＝1配信）。全員分＝管理者／配信者＝本人の分だけ（GASが絞る・scope=mine）
    ・Y向けの出演レポート（PDF）と同じ3つ：人ごとのまとめ（昼枠・夜枠）／席の内訳／日ごとのタイムライン
-   ・期間＝月・前半（1〜15日）・後半（16日〜）
+   ・期間＝月（🔄10/1 前半・後半のボタンはやめた＝毎日足されるので月の途中でもその日までの数字）
    ・🔴人名はGASが返す（このファイルに書かない＝公開リポジトリ） */
 var PRESENCE = (function () {
   var u = window.OKL.u;
@@ -39,13 +39,8 @@ var PRESENCE = (function () {
       .then(function () { st.loading = false; draw(); });
   }
 
-  // 期間で絞った配信
-  function rowsOf(d) {
-    return (d.rows || []).filter(function (r) {
-      var day = +r.date.slice(8);
-      return st.part === 'all' || (st.part === 'first' ? day <= 15 : day >= 16);
-    });
-  }
+  // 🔄10/1 Naoto「毎日更新なら前半・後半はいらない」＝期間は月だけ（毎日7時・19時に前の配信の分が足される）
+  function rowsOf(d) { return d.rows || []; }
 
   // 人ごとのまとめ（昼枠・夜枠を分ける＝配信の長さが違う）
   function summary(rows, slot) {
@@ -72,8 +67,10 @@ var PRESENCE = (function () {
           '<span class="wa-who" style="--mc:' + colorOf(name) + '">' + u.esc(name) + '</span>' +
           '<span class="num">' + s.n + '</span><span class="num">' + pctOf(s.p, s.p + s.b) + '</span>' +
           '<span class="num">' + mins(s.b / s.n) + '</span><span class="num">' + (s.max ? hm(s.max) + '<small>' + u.mdShort(s.maxAt) + '</small>' : '—') + '</span></button>' +
+          // 🔄10/1 Naoto「1配信あたり離席52回？」＝回数は月の合計だった（見出しが紛らわしい）→ 合計と1配信あたりを分けて書く
           (open ? '<div class="pr-more">出番 <b>' + hm(s.a) + '</b>（在席 ' + hm(s.p) + '・離席 ' + hm(s.b) + '・画面外 ' + hm(s.o) + '）<br>' +
-            '1配信あたり 在席 <b>' + hm(s.p / s.n) + '</b>・離席 <b>' + s.cnt + '回</b>' + (s.cnt ? '（平均 ' + mins(s.b / s.cnt) + '）' : '') + '</div>' : '');
+            '離席 <b>' + s.cnt + '回</b>' + (s.cnt ? '（1回平均 ' + mins(s.b / s.cnt) + '）' : '') + '<br>' +
+            '1配信あたり 在席 <b>' + hm(s.p / s.n) + '</b>・離席 <b>' + (s.cnt / s.n).toFixed(1) + '回・' + mins(s.b / s.n) + '</b></div>' : '');
       }).join('') + '</div>';
   }
 
@@ -169,10 +166,7 @@ var PRESENCE = (function () {
       ' <button type="button" class="link-btn" id="pr-reload">最新にする</button></span></div>' +
       '<div class="s-pick"><select id="pr-ym" class="date-input" aria-label="月">' + months.map(function (m) {
         return '<option value="' + m.ym + '"' + (m.ym === st.ym ? ' selected' : '') + '>' + m.ym.slice(0, 4) + '年' + u.monthLabel(m.ym) + '</option>';
-      }).join('') + '</select>' +
-      '<span class="seg seg-sm" role="group" aria-label="期間">' + [['all', '月'], ['first', '前半'], ['second', '後半']].map(function (p) {
-        return '<button type="button" data-prpart="' + p[0] + '" aria-pressed="' + (st.part === p[0]) + '">' + p[1] + '</button>';
-      }).join('') + '</span></div>';
+      }).join('') + '</select></div>';
   }
   function lastOf(d) { var m = (d.months || []).filter(function (x) { return x.ym === d.ym; })[0]; return m && m.last ? u.mdShort(m.last) + 'までの映像' : ''; }
 
@@ -195,7 +189,6 @@ var PRESENCE = (function () {
     var ym = el.querySelector('#pr-ym'), rl = el.querySelector('#pr-reload');
     if (ym) ym.addEventListener('change', function () { st.ym = ym.value; st.open = ''; if (st.data[st.ym]) draw(); else load(st.ym); });
     if (rl) rl.addEventListener('click', function () { if (st.loading) return; delete st.data[st.ym]; load(st.ym); });
-    el.querySelectorAll('[data-prpart]').forEach(function (b) { b.addEventListener('click', function () { st.part = b.dataset.prpart; st.open = ''; draw(); }); });
     el.querySelectorAll('[data-prtl]').forEach(function (b) { b.addEventListener('click', function () { st.tl = b.dataset.prtl; st.open = ''; draw(); }); });
     el.querySelectorAll('[data-prday]').forEach(function (b) { b.addEventListener('click', function () { st.open = st.open === b.dataset.prday ? '' : b.dataset.prday; draw(); }); });
     el.querySelectorAll('[data-prwho]').forEach(function (b) { b.addEventListener('click', function () { st.who = st.who === b.dataset.prwho ? '' : b.dataset.prwho; draw(); }); });
