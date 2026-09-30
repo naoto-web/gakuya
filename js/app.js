@@ -15,7 +15,7 @@ var APP = (function () {
   var TABS = [
     { id: 'home', label: 'ホーム', soon: '次の出番・休み希望の締切・自分の数字をここにまとめます。' },
     { id: 'shift', label: 'シフト' },
-    { id: 'wish', label: '休み希望', soon: '休みたい日をカレンダーで選んで、管理者に送れるようになります。締切もここに出ます。' },
+    // 🔄10/1 休み希望タブはやめた（Naoto）＝配信者はシフトのカレンダーの日付から出す／管理者はシフトの［休み希望］から一覧（wishadmin.js）
     { id: 'stats', label: '実績', soon: '自分のnote売上と的中率・回収率を見られるようになります（本人の分だけ）。' },
     { id: 'share', label: '共有' }   // 10/1 Yの要望＝相談・提案と回答・決定事項・プログラマーへの要望（share.js）
   ];
@@ -38,10 +38,6 @@ var APP = (function () {
     var view = document.getElementById('view');
     if (t.id === 'shift') { SHIFT.render(); return; }
     if (t.id === 'share') { SHARE.render(); return; }
-    // 管理者の休み希望＝シートに入っている希望の一覧（wishadmin.js）。配信者は今までどおり準備中
-    if (t.id === 'wish' && window.WISHADMIN && WISHADMIN.can(me)) { WISHADMIN.render(); return; }
-    // 🆕10/1 配信者（プレビュー中も）が自分で休み希望を出す（wishme.js）。配信者に開けるのはGASのスイッチ（me.wish）
-    if (t.id === 'wish' && window.WISHME && me && me.wish) { WISHME.render(); return; }
     // 実績＝note売上（sales.js・9/30〜）。見せてよいかはGASが決める（配信者は本人分だけ・閉じている間は準備中）
     if (t.id === 'stats' && window.SALES && SALES.can(me)) { SALES.render(); return; }
     view.innerHTML = '<h1 class="screen-title">' + t.label + '</h1><div class="card"><span class="pill dim" style="justify-self:start">準備中</span><p>' + t.soon + '</p></div>';
