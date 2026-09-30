@@ -1,5 +1,5 @@
-/* presence.js — 実績タブの「出演」（2026-10-01 Naoto「出演レポートもアプリに・まずは管理者だけ」）
-   ・中身＝GASの app=presence（出演ログ＝アーカイブ映像から誰が席にいたか・1行＝1配信）。🔴管理者の鍵だけ（GASが決める）
+/* presence.js — 実績タブの「出演」（2026-10-01 Naoto「出演レポートもアプリに・まずは管理者だけ」→同日「配信者にも反映」）
+   ・中身＝GASの app=presence（出演ログ＝アーカイブ映像から誰が席にいたか・1行＝1配信）。全員分＝管理者／配信者＝本人の分だけ（GASが絞る・scope=mine）
    ・Y向けの出演レポート（PDF）と同じ3つ：人ごとのまとめ（昼枠・夜枠）／席の内訳／日ごとのタイムライン
    ・期間＝月・前半（1〜15日）・後半（16日〜）
    ・🔴人名はGASが返す（このファイルに書かない＝公開リポジトリ） */
@@ -32,6 +32,7 @@ var PRESENCE = (function () {
     st.loading = true; st.err = ''; draw();
     API.presence(ym).then(function (d) {
       st.months = d.months || [];
+      st.mine = d.scope === 'mine';   // 配信者＝本人の分だけ（相方の帯・席の内訳はGASが返さない）
       if (!d.ym) return;
       st.data[d.ym] = d; st.ym = d.ym;
     }).catch(function (e) { st.err = e.code === 'notyet' ? 'notyet' : 'net'; })
@@ -101,6 +102,8 @@ var PRESENCE = (function () {
 
   // 日ごとのタイムライン（昼／夜を切り替え）。押すとその日の離席の一覧（アーカイブの時刻へのリンク）
   function timeline(rows) {
+    // 選んでいる枠に1本も無く、もう片方にある（夜だけ出る人など）＝もう片方で始める
+    if (!rows.some(function (r) { return r.slot === st.tl; }) && rows.length) st.tl = st.tl === '昼' ? '夜' : '昼';
     var list = rows.filter(function (r) { return r.slot === st.tl; });
     var seg = '<span class="seg seg-sm pr-tlseg" role="group" aria-label="枠">' + ['昼', '夜'].map(function (s) {
       return '<button type="button" data-prtl="' + s + '" aria-pressed="' + (st.tl === s) + '">' + s + '</button>';
@@ -177,13 +180,14 @@ var PRESENCE = (function () {
     if (APP.current() !== 'stats' || mode !== 'presence') return;
     var el = document.getElementById('view');
     var d = st.data[st.ym];
-    if (st.err === 'notyet') { el.innerHTML = head(null) + '<div class="card"><p>出演は管理者だけが見られます。</p></div>'; bind(el); return; }
+    if (st.err === 'notyet') { el.innerHTML = head(null) + '<div class="card"><p>出演はまだ準備中です。</p></div>'; bind(el); return; }
     if (st.months && !st.months.length) { el.innerHTML = head(null) + '<div class="card"><p>まだ出演ログがありません。</p></div>'; bind(el); return; }
     if (!d) { el.innerHTML = head(null) + '<p class="sub">' + (st.err ? 'つながりませんでした。「最新にする」を押してください' : '読み込んでいます…') + '</p>'; bind(el); return; }
     var rows = rowsOf(d);
     el.innerHTML = head(d) +
-      (rows.length ? sumTable(rows, '昼') + sumTable(rows, '夜') + teamCard(rows) + timeline(rows) : '<div class="card"><p>この期間の出演ログはありません。</p></div>') +
-      '<p class="fresh">アーカイブ映像を1分ごとに見て、席の名前（予想帯の色）とカメラの顔で判定。5分未満の不在は在席に含む。在席率＝在席÷（在席＋離席）。画面外＝待機・広告などカメラの出ない時間（離席に数えない）。席を入れ替えずに相方の席に座ると取り違えます。🔒管理者だけに表示（在席の分数は報酬に結びつけない）。</p>';
+      (rows.length ? sumTable(rows, '昼') + sumTable(rows, '夜') + (st.mine ? '' : teamCard(rows)) + timeline(rows) : '<div class="card"><p>この期間の出演ログはありません。</p></div>') +
+      '<p class="fresh">アーカイブ映像を1分ごとに見て、席の名前（予想帯の色）とカメラの顔で自動判定した目安です。5分未満の不在は在席に含む。在席率＝在席÷（在席＋離席）。画面外＝待機・広告などカメラの出ない時間（離席に数えない）。席を入れ替えずに相方の席に座ると取り違えます。' +
+      (st.mine ? '見えるのは自分の分だけです。' : '配信者には本人の分だけ見えます（相方の帯・席の内訳は出しません）。') + '</p>';
     bind(el);
   }
 
