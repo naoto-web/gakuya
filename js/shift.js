@@ -198,9 +198,16 @@ var SHIFT = (function () {
   }
 
   // グレードの札：昼開催＝「昼G」（金地）／夜開催＝「夜G」（紺地に金字）（9/29 Naoto「夜グレードと昼グレードが分かりづらい」）
-  function gradeBadge(g) {
+  // 🔄10/1 昼G・夜Gは開催カレンダーから（GAS）。昼と夜の両方にグレードがある日は grade2 もある＝札1つで「昼夜G」（マスが狭いため）
+  function gradeBadge(g, g2) {
     if (!g) return '';
+    if (g2) return '<span class="gb gb-both">昼夜G</span>';
     return '<span class="gb ' + (g.slot === '夜' ? 'gb-night' : 'gb-day') + '">' + g.slot + 'G</span>';
+  }
+  // その時間帯（昼／夜）のグレード。通し＝両方
+  function gradeAt(r, slot) {
+    if (slot === '通し') return gradeBadge(r.grade, r.grade2);
+    return gradeBadge([r.grade, r.grade2].filter(function (x) { return x && x.slot === slot; })[0]);
   }
 
   // 日付の色：日曜・祝日＝赤（sun）／土曜＝青（sat）。祝日が土曜なら赤を優先（9/29 Naoto）
@@ -274,14 +281,14 @@ var SHIFT = (function () {
         if (ed) {  // 編集中：行全体はボタンにしない（中の札がボタン）。日付だけが詳細の開閉
           return '<div class="dl-row is-editing' + (r.date === today ? ' is-today' : '') + (open ? ' is-open' : '') + '">' +
             '<button type="button" class="dl-date dl-open" data-open-date="' + r.date + '" aria-expanded="' + open + '"><span class="dl-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span><span class="dl-w ' + dayClass(r.date) + '">' + u.DOW[dw] + '</span>' +
-            (r.grade ? gradeBadge(r.grade) : '') + '</button>' +
+            gradeBadge(r.grade, r.grade2) + '</button>' +
             '<span class="dl-slot dl-day">' + pairChips(r, '昼', me, K) + '</span>' +
             '<span class="dl-slot dl-night">' + pairChips(r, '夜', me, K) + '</span>' +
             '</div>' + (open ? detail(r, me, today) : '');
         }
         return '<button type="button" class="dl-row' + (r.date === today ? ' is-today' : '') + (open ? ' is-open' : '') + '" data-date="' + r.date + '" aria-expanded="' + open + '">' +
           '<span class="dl-date"><span class="dl-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span><span class="dl-w ' + dayClass(r.date) + '">' + u.DOW[dw] + '</span>' +
-          (r.grade ? gradeBadge(r.grade) : '') + '</span>' +
+          gradeBadge(r.grade, r.grade2) + '</span>' +
           '<span class="dl-slot dl-day">' + pairChips(r, '昼', me, null) + '</span>' +
           '<span class="dl-slot dl-night">' + pairChips(r, '夜', me, null) + '</span>' +
           '</button>' + (open ? detail(r, me, today) : '');
@@ -369,12 +376,12 @@ var SHIFT = (function () {
       // 自分の出勤日はマスごと塗る：昼＝薄い黄／夜＝紺（9/29 Naoto）
       var cls = ['scal-cell', slot === '昼' ? 'is-mine-day' : slot === '夜' ? 'is-mine-night' : slot === '通し' ? 'is-mine-both' : '',
         r.date === today ? 'is-today' : '', r.date === st.sel ? 'is-sel' : ''].join(' ');
-      h += '<button type="button" class="' + cls + '"' + halfCell(r.date, me, slot) + ' data-date="' + r.date + '" aria-pressed="' + (r.date === st.sel) + '" aria-label="' + u.md(r.date) + (slot ? '・' + slot + 'の出番' : '') + (r.grade ? '・' + u.esc(r.grade.name) : '') + '">' +
+      h += '<button type="button" class="' + cls + '"' + halfCell(r.date, me, slot) + ' data-date="' + r.date + '" aria-pressed="' + (r.date === st.sel) + '" aria-label="' + u.md(r.date) + (slot ? '・' + slot + 'の出番' : '') + (r.grade ? '・' + u.esc(r.grade.name) + (r.grade2 ? '・' + u.esc(r.grade2.name) : '') : '') + '">' +
         '<span class="scal-top"><span class="scal-d num ' + dayClass(r.date) + '">' + Number(r.date.slice(8)) + '</span>' +
         (!me && !all && isAdmin() ? shootMark(r) : '') +
         // グレードの札は「本人がその日その時間帯に出る」ときだけ（夜に出る日の昼Gは出さない・9/29 Naoto）。
         //   管理者で誰も強調していないときは全部出す（全体を見る画面なので）
-        (me && !all ? (slot && r.grade && (r.grade.slot === slot || slot === '通し') ? gradeBadge(r.grade) : '') : gradeBadge(r.grade)) + '</span>' +
+        (me && !all ? (slot ? gradeAt(r, slot) : '') : gradeBadge(r.grade, r.grade2)) + '</span>' +
         (all ? '<span class="scal-body is-all">' + blocks(r, me) + '</span></button>' : '<span class="scal-body">' + cellBody(r, me, slot) + '</span></button>');
     });
     return '<div class="cal-head mon">' + HEAD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="scal">' + h + '</div>';
