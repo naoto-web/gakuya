@@ -180,7 +180,8 @@ var CARD = (function () {
     if (o === 'err') return h + '<p class="sub">オッズが読めませんでした。「更新」を押してください。</p></div>';
     if (!o) return h + '<p class="sub">オッズはまだ出ていません。</p></div>';
     if (!o.cnt || !o.top.length) return h + '<p class="sub">まだ発売前です。</p></div>';
-    return h + '<ol class="rc-odds-list">' + o.top.map(function (t, i) {
+    // 🔄10/1 Naoto「縦に1〜15番人気・2列目に16〜30番人気」＝列の方向に流す（行の数＝半分・切り上げ）
+    return h + '<ol class="rc-odds-list" style="grid-template-rows:repeat(' + Math.ceil(o.top.length / 2) + ',auto)">' + o.top.map(function (t, i) {
       return '<li><span class="rc-rank num">' + (i + 1) + '</span><span class="rc-combo">' + t[0].split('').map(function (n) { return car(+n, 'sm'); }).join('') + '</span><b class="num">' + oddsTxt(t[1]) + '</b></li>';
     }).join('') + '</ol><p class="fresh">発売中は動きます。人気の上位30通り（全' + o.n + '通り）。</p></div>';
   }
