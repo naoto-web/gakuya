@@ -1,5 +1,5 @@
-/* sales.js — 管理者の「実績」タブ＝note売上（2026-09-30 Naoto「note売上との連携」「いったん管理者だけ見える形で」）
-   ・中身＝GASの app=sales（人×記事の集計値）。GASは管理者の鍵にだけ返す（配信者・プレビュー中は準備中のまま）
+/* sales.js — 「実績」タブ＝note売上（2026-09-30 Naoto「note売上との連携」）
+   ・中身＝GASの app=sales（人×記事の集計値）。全員分＝見てよい管理者だけ／🔄9/30 配信者＝本人の行だけ（scope=mine・GASのスイッチがONのとき）
    ・月＝レース日の月。出勤日数＝シフト（実際に誰が出た）。シートが無い月は「その枠の記事が売れた日」で数える
    ・全員＝人ごとの一覧（押すとその人）／個人＝売上（手数料の前・後）・出勤日数・1出勤あたり（昼・夜・グレード）＋記事ごとの一覧
    ・🔴人名・金額はGASが返す（このファイルに書かない＝公開リポジトリ） */
@@ -24,6 +24,10 @@ var SALES = (function () {
     st.loading = true; st.err = ''; draw();
     API.sales(ym).then(function (d) {
       st.data[d.ym] = d; st.ym = d.ym; st.months = d.months; st.asof = d.asof;
+      // 配信者（scope=mine）＝GASが本人の行だけ返す。画面も本人の個人画面だけ（人選び・全員の表・全員の比較は出さない）
+      st.mine = d.scope === 'mine';
+      if (st.mine) st.who = d.me;
+      if (!d.ym) return;
       // 出勤日数のためにその月のシフト（管理者は全月読める）。シートが無い月は失敗する＝売れた日で数える
       if (st.shift[d.ym] === undefined) {
         return API.shift(d.ym).then(function (s) { st.shift[d.ym] = s.rows ? s : null; }, function () { st.shift[d.ym] = null; });
@@ -124,9 +128,9 @@ var SALES = (function () {
       '<div class="s-pick"><select id="s-ym" class="date-input" aria-label="月">' + months.map(function (m) {
         return '<option value="' + m.ym + '"' + (m.ym === st.ym ? ' selected' : '') + '>' + m.ym.slice(0, 4) + '年' + u.monthLabel(m.ym) + '</option>';
       }).join('') + '</select>' +
-      '<select id="s-who" class="date-input" aria-label="人"><option value="">全員</option>' + members().map(function (m) {
+      (st.mine ? '' : '<select id="s-who" class="date-input" aria-label="人"><option value="">全員</option>' + members().map(function (m) {
         return '<option value="' + u.esc(m.name) + '"' + (m.name === st.who ? ' selected' : '') + '>' + u.esc(m.name) + '</option>';
-      }).join('') + '</select></div>';
+      }).join('') + '</select>') + '</div>';
   }
 
   // 全員＝人ごとに1行（押すとその人）
@@ -293,16 +297,25 @@ var SALES = (function () {
     if (APP.current() !== 'stats') return;
     var el = document.getElementById('view');
     var d = st.data[st.ym];
-    if (st.err === 'notyet') { el.innerHTML = '<h1 class="screen-title">実績</h1><div class="card"><p>準備中です。</p></div>'; return; }
+    if (st.err === 'notyet') {
+      el.innerHTML = '<h1 class="screen-title">実績</h1><div class="card"><span class="pill dim" style="justify-self:start">準備中</span>' +
+        '<p>自分のnote売上と的中率・回収率を見られるようになります（本人の分だけ）。</p></div>';
+      return;
+    }
+    if (st.months && !st.months.length) {
+      el.innerHTML = '<h1 class="screen-title">実績</h1><div class="card"><p>まだnoteの売上データがありません。</p></div>'; return;
+    }
     if (!d) {
       el.innerHTML = head(null) + '<p class="sub">' + (st.err ? 'つながりませんでした。「最新にする」を押してください' : '読み込んでいます…') + '</p>';
       bind(el); return;
     }
     var shift = st.shift[st.ym];
+    // 注記。配信者には収支表（Yの集計）の話を出さない
     el.innerHTML = head(d) + (st.who ? oneView(d, shift, st.who) : allView(d, shift)) +
-      '<p class="fresh">月＝レースの日の月（収支表は決済日の月なので、月末の前売り分だけずれます）。出勤日数＝' +
-      (shift ? 'シフト（実際に出た人）' : 'この月はシフト表が無いので、その枠の記事が売れた日') +
-      (d.asof && d.asof.slice(0, 7) === st.ym ? '。この月はnoteのデータが' + u.mdShort(d.asof) + 'までなので、出勤もその日まで数えています' : '') + '。手数料は決済方法ごとの推定（収支表と±0.3%）。</p>';
+      '<p class="fresh">月＝レースの日の月' + (st.mine ? '（月末に前売りで売れた記事は、レースの日の月に入ります）' : '（収支表は決済日の月なので、月末の前売り分だけずれます）') + '。出勤日数＝' +
+      (shift ? 'シフト（実際に出た人）' : (st.mine ? 'その枠の記事が売れた日で数えています' : 'この月はシフト表が無いので、その枠の記事が売れた日')) +
+      (d.asof && d.asof.slice(0, 7) === st.ym ? '。この月はnoteのデータが' + u.mdShort(d.asof) + 'までなので、出勤もその日まで数えています' : '') +
+      '。手数料は決済方法ごとの推定' + (st.mine ? '（実際の入金と少しずれることがあります）' : '（収支表と±0.3%）') + '。</p>';
     bind(el);
     drawCharts(el, d);
   }
@@ -316,8 +329,8 @@ var SALES = (function () {
   }
 
   return {
-    // 管理者本人の鍵のときだけ（プレビュー中は配信者と同じ「準備中」）
-    can: function (me) { return !!(me && me.role === 'admin' && !me.previewBy); },
+    // 🔄9/30 全員がこの画面に来る。見せてよいかはGASが決める（だめなら notyet＝準備中の案内）
+    can: function (me) { return !!me; },
     render: function () { if (!st.ym && !st.loading && !st.err) load(''); else draw(); }
   };
 })();
