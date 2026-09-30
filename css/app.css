@@ -1071,6 +1071,43 @@ html.rc-lock, html.rc-lock body { overflow: hidden; }
 .rc-rank { font-size: 12px; color: var(--fg-faint); text-align: right; }
 .rc-odds-list b { text-align: right; font-size: 16px; }
 
+/* ── 配信者の休み希望（wishme.js・10/1） ── */
+.wm-cell { min-height: 50px; }
+.wm-left { font-size: 14px; font-weight: 700; white-space: nowrap; }
+.wm-left .num { font-size: 32px; margin: 0 2px; }
+.wm-body { align-items: center; }
+.wm-mark { display: inline-block; font-size: 11px; font-weight: 700; line-height: 1; padding: 3px 4px; border-radius: 4px; color: #fff; font-style: normal; }
+.wm-off { background: var(--off); }
+.wm-half { background: var(--half); }
+.wm-shoot { background: var(--shoot); }
+.wm-board { gap: 8px; }
+.wm-bhead { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.wm-bhead b { font-size: 17px; }
+.wm-bhead .sun { color: var(--ng); } .wm-bhead .sat { color: var(--accent); }
+.wm-bhead small { font-size: 11px; color: var(--fg-dim); }
+.wm-kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.wm-k { border: 1px solid var(--line); background: var(--sunk); border-radius: 8px; padding: 8px 0; font-weight: 700; }
+.wm-k.is-on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.wm-q { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.wm-qb { border: 1px solid var(--line); background: var(--sunk); border-radius: 8px; padding: 6px 0; font-size: 12px; font-weight: 700; }
+.wm-qb.is-ng { background: var(--ng-soft); border-color: var(--ng); color: var(--ng); }
+.wm-note { width: 100%; box-sizing: border-box; }
+.wm-sum { gap: 6px; font-size: 14px; }
+.wm-sum small { color: var(--fg-dim); margin-left: 4px; }
+/* 管理者：配信者から届いた希望 */
+.wa-log { gap: 6px; }
+.wa-log-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.wa-log-head small { font-size: 12px; color: var(--fg-dim); }
+.wa-notyet { font-size: 12px; color: var(--fg-dim); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.wa-notyet .wa-who, .wa-entries .wa-who { margin-right: 0; flex: 0 0 auto; font-size: 12px; padding: 0 6px; }   /* 元の .wa-who は margin-right:auto（右へ押し広げる）＝ここでは詰める */
+.wa-entries { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 13px; }
+.wa-entries li { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; padding: 2px 0; border-bottom: 1px dashed var(--line); }
+.wa-entries li.is-new { background: var(--accent-soft); }
+.wa-new { font-size: 10px; color: #fff; background: var(--ng); border-radius: 4px; padding: 0 4px; }
+.wa-note { color: var(--fg-dim); }
+.wa-at { margin-left: auto; font-size: 11px; color: var(--fg-faint); }
+.wa-cm { font-style: normal; font-size: 10px; color: var(--fg-dim); margin-left: 4px; }
+
 /* ── 共有タブ（share.js・10/1） ── */
 .sh-new { justify-self: stretch; }
 .sh-form { gap: 6px; }
