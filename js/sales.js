@@ -95,15 +95,16 @@ var SALES = (function () {
   function hitStats(ym, who, maxDay) {
     var rows = ((st.hits || {})[ym] || []).filter(function (r) { return r[H.who] === who && (!maxDay || r[H.day] <= maxDay); });
     if (!rows.length) return null;
-    var s = { settled: 0, hit: 0, inv: 0, ref: 0, nSettled: 0, nHit: 0, last: 0 };
+    var s = { settled: 0, hit: 0, inv: 0, ref: 0, nSettled: 0, nHit: 0, nInv: 0, nRef: 0, last: 0 };
     rows.forEach(function (r) {
       s.settled += r[H.settled]; s.hit += r[H.hit]; s.inv += r[H.inv]; s.ref += r[H.ref];
-      if (r[H.note]) { s.nSettled += r[H.settled]; s.nHit += r[H.hit]; }
+      if (r[H.note]) { s.nSettled += r[H.settled]; s.nHit += r[H.hit]; s.nInv += r[H.inv]; s.nRef += r[H.ref]; }
       s.last = Math.max(s.last, r[H.day]);
     });
     s.rate = s.settled ? s.hit / s.settled * 100 : null;
     s.back = s.inv ? s.ref / s.inv * 100 : null;
     s.nRate = s.nSettled ? s.nHit / s.nSettled * 100 : null;
+    s.nBack = s.nInv ? s.nRef / s.nInv * 100 : null;   // 10/1 Yの要望「note回収率」
     return s;
   }
   // 見出しの期間＝その月に予想データがある最初の日〜最後の日（チーム全体）。🔄9/30 Naoto「9月なのにスタートが8/14」
@@ -255,12 +256,17 @@ var SALES = (function () {
       '<div class="s-k"><small>売上（手数料の前）</small><b class="num">' + yen(s.total) + '</b>' + (s.tip ? '<small>うちチップ ' + yen(s.tip) + '</small>' : '') + dl(p && delta(s.total, p.total, 'pct')) + '</div>' +
       '<div class="s-k"><small>手取り（手数料の後）</small><b class="num">' + yen(s.net) + '</b><small>手数料 ' + yen(s.fee) + '</small>' + dl(p && delta(s.net, p.net, 'pct')) + '</div>' +
       '<div class="s-k"><small>出勤日数</small><b class="num">' + s.nd + '日</b><small>昼' + s.nD + '・夜' + s.nN + '・G' + s.nG + '</small>' + dl(p && delta(s.nd, p.nd, 'day')) + '</div>' +
-      '<div class="s-k"><small>1出勤あたり</small><b class="num">' + per(s.total, s.nd) + '</b><small>記事' + s.arts + '本・' + u.yen(s.n) + '件</small>' + dl(p && s.nd && p.nd && delta(s.total / s.nd, p.total / p.nd, 'pct')) + '</div></div>' +
+      '<div class="s-k"><small>1出勤あたり</small><b class="num">' + per(s.total, s.nd) + '</b>' + dl(p && s.nd && p.nd && delta(s.total / s.nd, p.total / p.nd, 'pct')) + '</div>' +
+      // 🔄10/1 Yの要望「1記事あたりの売上」＝売上（チップ込み）÷売れた記事の本数（0件の記事は明細に無い＝確認した範囲では出した記事とほぼ同じ）
+      '<div class="s-k"><small>記事</small><b class="num">' + u.yen(s.arts) + '本</b><small>' + u.yen(s.n) + '件売れた</small>' + dl(p && delta(s.arts, p.arts, 'pct')) + '</div>' +
+      '<div class="s-k"><small>1記事あたり</small><b class="num">' + per(s.total, s.arts) + '</b><small>' + (s.arts ? (s.n / s.arts).toFixed(1) + '件/本' : '') + '</small>' + dl(p && s.arts && p.arts && delta(s.total / s.arts, p.total / p.arts, 'pct')) + '</div></div>' +
       // 予想の成績（配信コンソールの予想・8/14〜）
-      '<div class="card s-kpi s-kpi3" style="--mc:' + colorOf(who) + '"><div class="s-k3-title">予想の成績<small>配信コンソールの予想' + hitRangeLabel(st.ym) + '</small></div>' +
+      // 🔄10/1 Yの要望＝note回収率を足して2×2（上＝全部の予想／下＝note記事だけ）
+      '<div class="card s-kpi s-kpi3 s-kpi2x2" style="--mc:' + colorOf(who) + '"><div class="s-k3-title">予想の成績<small>配信コンソールの予想' + hitRangeLabel(st.ym) + '</small></div>' +
       (hs ? '<div class="s-k"><small>的中率</small><b class="num">' + pct1(hs.rate) + '</b><small>' + hs.hit + '/' + hs.settled + 'レース</small>' + dlH(hp && delta(hs.rate, hp.rate, 'pt')) + '</div>' +
         '<div class="s-k"><small>回収率</small><b class="num">' + pct1(hs.back) + '</b><small>回収 ' + yen(hs.ref) + '</small>' + dlH(hp && delta(hs.back, hp.back, 'pt')) + '</div>' +
-        '<div class="s-k"><small>note記事の的中率</small><b class="num">' + pct1(hs.nRate) + '</b><small>' + hs.nHit + '/' + hs.nSettled + 'レース</small>' + dlH(hp && delta(hs.nRate, hp.nRate, 'pt')) + '</div>'
+        '<div class="s-k"><small>note記事の的中率</small><b class="num">' + pct1(hs.nRate) + '</b><small>' + hs.nHit + '/' + hs.nSettled + 'レース</small>' + dlH(hp && delta(hs.nRate, hp.nRate, 'pt')) + '</div>' +
+        '<div class="s-k"><small>note記事の回収率</small><b class="num">' + pct1(hs.nBack) + '</b><small>回収 ' + yen(hs.nRef) + '</small>' + dlH(hp && delta(hs.nBack, hp.nBack, 'pt')) + '</div>'
         : '<p class="sub">' + (st.all ? 'この月の予想データはありません（8/14から）' : '読み込み中…') + '</p>') + '</div>' +
       // 購入者数（配信者には本人分だけ）
       (st.all ? '<div class="card s-kpi s-kpi3 s-kpi2x2" style="--mc:' + colorOf(who) + '"><div class="s-k3-title">買ってくれた人<small>人数だけ（名前は持っていません）</small></div>' +
