@@ -122,7 +122,8 @@ var SALES = (function () {
   // 🆕10/1 Naoto「時間帯別の的中率・回収率」＝区分ごとに分けた成績の表（グレード・チャレンジ・ガールズもあとで同じ表に足す）
   //   keyOf(行)→区分の名前（null＝数えない）。order＝表の並び
   var WAKU_NAME = { 'モ': 'モーニング', 'デ': 'デイ', 'ナ': 'ナイター', 'ミ': 'ミッド' };
-  function hitBy(ym, who, keyOf, order) {
+  // keepEmpty＝実績の無い区分も行を出す（数字は「—」）＝10/2 Naoto「グレードの実績が無い人もグレードの行は出す」
+  function hitBy(ym, who, keyOf, order, keepEmpty) {
     var by = {};
     ((st.hits || {})[ym] || []).forEach(function (r) {
       if (r[H.who] !== who) return;
@@ -131,8 +132,9 @@ var SALES = (function () {
       var s = by[k] || (by[k] = { settled: 0, hit: 0, inv: 0, ref: 0 });
       s.settled += r[H.settled]; s.hit += r[H.hit]; s.inv += r[H.inv]; s.ref += r[H.ref];
     });
-    return order.filter(function (k) { return by[k] && by[k].settled; }).map(function (k) {
+    return order.filter(function (k) { return keepEmpty || (by[k] && by[k].settled); }).map(function (k) {
       var s = by[k];
+      if (!s || !s.settled) return { k: k, n: 0, rate: null, back: null, hit: 0 };
       return { k: k, n: s.settled, rate: s.hit / s.settled * 100, back: s.inv ? s.ref / s.inv * 100 : null, hit: s.hit };
     });
   }
@@ -141,7 +143,7 @@ var SALES = (function () {
     return '<div class="card s-brk s-hitby"><div class="s-k3-title">' + title + (note ? '<small>' + note + '</small>' : '') + '</div>' +
       '<div class="s-br s-br-head"><span></span><span>的中率</span><span>回収率</span><span>レース</span></div>' +
       rows.map(function (x) {
-        return '<div class="s-br"><span>' + x.k + '</span><span class="num">' + pct1(x.rate) + '</span><span class="num">' + pct1(x.back) + '</span><span class="num">' + x.hit + '/' + x.n + '</span></div>';
+        return '<div class="s-br' + (x.n ? '' : ' is-none') + '"><span>' + x.k + '</span><span class="num">' + pct1(x.rate) + '</span><span class="num">' + pct1(x.back) + '</span><span class="num">' + (x.n ? x.hit + '/' + x.n : '—') + '</span></div>';
       }).join('') + '</div>';
   }
   function wakuTable(ym, who) {
@@ -159,7 +161,7 @@ var SALES = (function () {
     var hasKind = rows[0].length > H.kind;
     return hitTable('レースの種類別の成績', 'グレード＝G3以上の開催（その中のガールズはガールズに入れる）', hitBy(ym, who, function (r) {
       return hasKind && r[H.kind] ? r[H.kind] : r[H.g] === 'G' ? 'グレード' : 'それ以外';
-    }, ['グレード', 'チャレンジ', 'ガールズ', 'それ以外']));
+    }, ['グレード', 'チャレンジ', 'ガールズ', 'それ以外'], true));
   }
 
   // ── 購入者数（9/30 Naoto③）＝人数だけ（名前は持っていない）。🔄同日 配信者にも本人分は見せる（本人のnoteから数えた本人の客の人数）＝GASが本人の行だけ返す ──
