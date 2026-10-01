@@ -135,18 +135,57 @@ var SALES = (function () {
       }).join('') + '</select>') + '</div>';
   }
 
+  // 🆕10/1 月ごとの数字（全員×直近6か月）＝PDFの「チーム全体（配信者別×月）」の表。［売上｜手取り｜出勤］で切り替え・金額は万円
+  //   途中の月（noteのデータが月の途中まで）は列の見出しに「〜18日」
+  function monthTable() {
+    if (!st.all) return '';
+    var K = st.mtKind || 'total';
+    var yms = Object.keys(st.all).sort().slice(-6);
+    var val = function (s) { return K === 'nd' ? s.nd : s[K]; };
+    var fmt = function (v) { return K === 'nd' ? (v ? v + '' : '－') : (v ? u.man(v) : '－'); };
+    var rows = members().map(function (m) {
+      return { m: m, v: yms.map(function (ym) { var s = stats(st.all[ym], m.name, st.shift[ym] || null, ym); return s.arts || s.nd ? val(s) : 0; }) };
+    }).filter(function (x) { return x.v.some(Boolean); });
+    var team = yms.map(function (ym, i) {
+      if (K !== 'nd') return rows.reduce(function (a, x) { return a + x.v[i]; }, 0);
+      // 出勤のチーム計＝誰かが出た日（PDFと同じ）
+      var days = {};
+      rows.forEach(function (x) { var s = stats(st.all[ym], x.m.name, st.shift[ym] || null, ym); Object.keys(s.days).forEach(function (d) { days[d] = 1; }); });
+      return Object.keys(days).length;
+    });
+    var head = function (ym) { var p = partialDay(ym); return '<span>' + u.monthLabel(ym) + (p ? '<small>〜' + p + '日</small>' : '') + '</span>'; };
+    var cols = 'grid-template-columns:64px repeat(' + yms.length + ',1fr)';
+    return '<div class="card s-mt"><div class="ch-title">月ごとの数字<small>' + (K === 'nd' ? '日' : '万円') + '</small>' +
+      '<span class="seg seg-sm s-mt-seg" role="group" aria-label="中身">' + [['total', '売上'], ['net', '手取り'], ['nd', '出勤']].map(function (k) {
+        return '<button type="button" data-mt="' + k[0] + '" aria-pressed="' + (K === k[0]) + '">' + k[1] + '</button>';
+      }).join('') + '</span></div>' +
+      '<div class="s-mt-row s-mt-head" style="' + cols + '"><span></span>' + yms.map(head).join('') + '</div>' +
+      rows.map(function (x) {
+        return '<div class="s-mt-row" style="' + cols + '"><span class="wa-who" style="--mc:' + colorOf(x.m.name) + '">' + u.esc(x.m.name) + '</span>' +
+          x.v.map(function (v) { return '<span class="num">' + fmt(v) + '</span>'; }).join('') + '</div>';
+      }).join('') +
+      '<div class="s-mt-row is-sum" style="' + cols + '"><span>チーム計</span>' + team.map(function (v) { return '<span class="num">' + fmt(v) + '</span>'; }).join('') + '</div>' +
+      (K === 'nd' ? '<p class="fresh s-note">出勤＝シフト（シートがある月）か、その枠の記事が売れた日。チーム計＝誰かが出た日</p>' : '') + '</div>';
+  }
+
   // 全員＝人ごとに1行（押すとその人）
   function allView(d, shift) {
-    var list = members().map(function (m) { return { m: m, s: stats(d.rows, m.name, shift, st.ym) }; }).filter(function (x) { return x.s.arts || x.s.nd; });
-    var sum = list.reduce(function (a, x) { a.total += x.s.total; a.net += x.s.net; return a; }, { total: 0, net: 0 });
+    var list = members().map(function (m) { return { m: m, s: stats(d.rows, m.name, shift, st.ym), p: st.all ? prevStats(m.name, st.ym) : null }; }).filter(function (x) { return x.s.arts || x.s.nd; });
+    var sum = list.reduce(function (a, x) { a.total += x.s.total; a.net += x.s.net; if (x.p) { a.pt += x.p.total; a.pn += x.p.net; } return a; }, { total: 0, net: 0, pt: 0, pn: 0 });
+    var hasPrev = !!(st.all && prevYm(st.ym));
+    // 🆕10/1 Yへの半月報告（PDF）をアプリで置き換える準備＝PDFの「チーム全体」と同じ中身：前月比（途中の月は先月同期比）・出勤の昼夜の内訳・チーム計の前月比
+    var dl = function (c, p) { return hasPrev && p ? '<small class="s-dl">' + (delta(c, p, 'pct') || '—') + '</small>' : ''; };
     return '<div class="card s-all"><div class="s-all-head"><span></span><span>売上</span><span>手取り</span><span>出勤</span><span>1出勤</span></div>' +
       list.map(function (x) {
         return '<button type="button" class="s-all-row" data-swho="' + u.esc(x.m.name) + '">' +
           '<span class="wa-who" style="--mc:' + colorOf(x.m.name) + '">' + u.esc(x.m.name) + '</span>' +
-          '<span class="num">' + u.yen(x.s.total) + '</span><span class="num">' + u.yen(x.s.net) + '</span>' +
-          '<span class="num">' + x.s.nd + '日</span><span class="num">' + (x.s.nd ? u.yen(x.s.total / x.s.nd) : '—') + '</span></button>';
+          '<span class="num">' + u.yen(x.s.total) + dl(x.s.total, x.p && x.p.total) + '</span><span class="num">' + u.yen(x.s.net) + dl(x.s.net, x.p && x.p.net) + '</span>' +
+          '<span class="num">' + x.s.nd + '日<small class="s-dl">' + (x.s.nD || x.s.nN ? '昼' + x.s.nD + '/夜' + x.s.nN : '') + '</small></span>' +
+          '<span class="num">' + (x.s.nd ? u.yen(x.s.total / x.s.nd) : '—') + (x.s.nd && x.p && x.p.nd ? dl(x.s.total / x.s.nd, x.p.total / x.p.nd) : '') + '</span></button>';
       }).join('') +
-      '<div class="s-all-row is-sum"><span>合計</span><span class="num">' + u.yen(sum.total) + '</span><span class="num">' + u.yen(sum.net) + '</span><span></span><span></span></div></div>' +
+      '<div class="s-all-row is-sum"><span>合計</span><span class="num">' + u.yen(sum.total) + dl(sum.total, sum.pt) + '</span><span class="num">' + u.yen(sum.net) + dl(sum.net, sum.pn) + '</span><span></span><span></span></div>' +
+      (hasPrev ? '<p class="fresh s-note">小さい数字＝' + deltaLabel(st.ym) + '（' + u.monthLabel(prevYm(st.ym)) + (partialDay(st.ym) ? 'の1〜' + partialDay(st.ym) + '日' : '') + 'と比べて）。出勤の昼/夜は両方出た日をそれぞれに数える</p>' : '') + '</div>' +
+      monthTable() +
       // 的中率・回収率・購入者（9/30）。全員の表は管理者の画面だけ
       (st.all ? '<div class="card s-all"><div class="s-all-head"><span></span><span>的中率</span><span>回収率</span><span>購入者</span><span>リピート</span></div>' +
         list.map(function (x) {
@@ -333,6 +372,7 @@ var SALES = (function () {
     if (ym) ym.addEventListener('change', function () { st.ym = ym.value; if (st.data[st.ym]) draw(); else load(st.ym); });
     if (who) who.addEventListener('change', function () { st.who = who.value; draw(); window.scrollTo(0, 0); });
     if (rl) rl.addEventListener('click', function () { if (st.loading) return; delete st.data[st.ym]; delete st.shift[st.ym]; st.all = null; st.allErr = false; load(st.ym); });
+    el.querySelectorAll('[data-mt]').forEach(function (b) { b.addEventListener('click', function () { st.mtKind = b.dataset.mt; draw(); }); });
     el.querySelectorAll('[data-swho]').forEach(function (b) { b.addEventListener('click', function () { st.who = b.dataset.swho; draw(); window.scrollTo(0, 0); }); });
   }
 
