@@ -92,7 +92,7 @@ var SALES = (function () {
   function deltaLabel(ym) { return partialDay(ym) ? '先月同期比' : '先月比'; }
 
   // ── 的中（9/30 Naoto①）＝配信コンソールの予想を配信画面と同じ判定にかけた数字。8/14〜 ──
-  var H = { who: 0, day: 1, slot: 2, waku: 3, note: 4, settled: 5, hit: 6, inv: 7, ref: 8 };
+  var H = { who: 0, day: 1, slot: 2, waku: 3, note: 4, settled: 5, hit: 6, inv: 7, ref: 8, g: 9 };   // g＝10/1〜 グレード開催のレース
   function hitStats(ym, who, maxDay) {
     var rows = ((st.hits || {})[ym] || []).filter(function (r) { return r[H.who] === who && (!maxDay || r[H.day] <= maxDay); });
     if (!rows.length) return null;
@@ -119,6 +119,43 @@ var SALES = (function () {
     return '・' + m + '/' + a + '〜' + m + '/' + b + (first && a > 1 ? '（予想データは' + m + '/' + a + 'から）' : '');
   }
   function pct1(v) { return v == null ? '—' : v.toFixed(1) + '%'; }
+  // 🆕10/1 Naoto「時間帯別の的中率・回収率」＝区分ごとに分けた成績の表（グレード・チャレンジ・ガールズもあとで同じ表に足す）
+  //   keyOf(行)→区分の名前（null＝数えない）。order＝表の並び
+  var WAKU_NAME = { 'モ': 'モーニング', 'デ': 'デイ', 'ナ': 'ナイター', 'ミ': 'ミッド' };
+  function hitBy(ym, who, keyOf, order) {
+    var by = {};
+    ((st.hits || {})[ym] || []).forEach(function (r) {
+      if (r[H.who] !== who) return;
+      var k = keyOf(r);
+      if (!k) return;
+      var s = by[k] || (by[k] = { settled: 0, hit: 0, inv: 0, ref: 0 });
+      s.settled += r[H.settled]; s.hit += r[H.hit]; s.inv += r[H.inv]; s.ref += r[H.ref];
+    });
+    return order.filter(function (k) { return by[k] && by[k].settled; }).map(function (k) {
+      var s = by[k];
+      return { k: k, n: s.settled, rate: s.hit / s.settled * 100, back: s.inv ? s.ref / s.inv * 100 : null, hit: s.hit };
+    });
+  }
+  function hitTable(title, note, rows) {
+    if (!rows.length) return '';
+    return '<div class="card s-brk s-hitby"><div class="s-k3-title">' + title + (note ? '<small>' + note + '</small>' : '') + '</div>' +
+      '<div class="s-br s-br-head"><span></span><span>的中率</span><span>回収率</span><span>レース</span></div>' +
+      rows.map(function (x) {
+        return '<div class="s-br"><span>' + x.k + '</span><span class="num">' + pct1(x.rate) + '</span><span class="num">' + pct1(x.back) + '</span><span class="num">' + x.hit + '/' + x.n + '</span></div>';
+      }).join('') + '</div>';
+  }
+  function wakuTable(ym, who) {
+    var rows = hitBy(ym, who, function (r) { return WAKU_NAME[r[H.waku]] || null; }, ['モーニング', 'デイ', 'ナイター', 'ミッド']);
+    // 時間帯が分からないレース（同じ日に同じ場で区分が2つある等）は表に入れない＝数を注記に出す
+    var all = hitStats(ym, who), inT = rows.reduce(function (a, x) { return a + x.n; }, 0), miss = all ? all.settled - inT : 0;
+    return hitTable('時間帯別の成績', '確定したレースだけ' + (miss > 0 ? '・時間帯の分からない' + miss + 'レースは入れていない' : ''), rows);
+  }
+  // 🆕10/1 Naoto「グレードの的中率・回収率」＝グレード（G3以上）の開催のレースとそれ以外（チャレンジ・ガールズは区分のデータがそろったら足す）
+  function kindTable(ym, who) {
+    var rows = ((st.hits || {})[ym] || []);
+    if (!rows.length || rows[0].length <= H.g) return '';   // 前のデータ（G の列が無い）のときは出さない
+    return hitTable('レースの種類別の成績', 'グレード＝G3以上の開催', hitBy(ym, who, function (r) { return r[H.g] === 'G' ? 'グレード' : 'それ以外'; }, ['グレード', 'それ以外']));
+  }
 
   // ── 購入者数（9/30 Naoto③）＝人数だけ（名前は持っていない）。🔄同日 配信者にも本人分は見せる（本人のnoteから数えた本人の客の人数）＝GASが本人の行だけ返す ──
   function buyerOf(who, ym) { return (st.buyers || []).filter(function (r) { return r[0] === who && r[1] === ym; })[0] || null; }
@@ -308,6 +345,7 @@ var SALES = (function () {
         '<div class="s-k"><small>note記事の的中率</small><b class="num">' + pct1(hs.nRate) + '</b><small>' + hs.nHit + '/' + hs.nSettled + 'レース</small>' + dlH(hp && delta(hs.nRate, hp.nRate, 'pt')) + '</div>' +
         '<div class="s-k"><small>note記事の回収率</small><b class="num">' + pct1(hs.nBack) + '</b><small>回収 ' + yen(hs.nRef) + '</small>' + dlH(hp && delta(hs.nBack, hp.nBack, 'pt')) + '</div>'
         : '<p class="sub">' + (st.all ? 'この月の予想データはありません（8/14から）' : '読み込み中…') + '</p>') + '</div>' +
+      (hs ? kindTable(st.ym, who) + wakuTable(st.ym, who) : '') +
       // 購入者数（配信者には本人分だけ）
       (st.all ? '<div class="card s-kpi s-kpi3 s-kpi2x2" style="--mc:' + colorOf(who) + '"><div class="s-k3-title">買ってくれた人<small>人数だけ（名前は持っていません）</small></div>' +
         (b ? '<div class="s-k"><small>購入者</small><b class="num">' + u.yen(b[2]) + '人</b><small>この月に買った人</small>' + (partialDay(st.ym) ? '<small>' + u.mdShort(st.asof) + 'まで</small>' : dl(bp && delta(b[2], bp[2], 'pct'))) + '</div>' +
