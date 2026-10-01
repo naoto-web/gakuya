@@ -1256,3 +1256,17 @@ html.rc-lock, html.rc-lock body { overflow: hidden; }
 /* 共有タブの削除（10/1・管理者は全部／配信者は自分の投稿・要望） */
 .sh-delrow { display: flex; justify-content: flex-end; margin-top: 4px; }
 .sh-del { color: var(--ng) !important; font-size: 12px; }
+
+/* 実績の全員（10/1 Yへの半月報告の置き換え）：前月比の小さい字・月ごとの数字の表 */
+.s-all-row .num { line-height: 1.25; }
+.s-dl { display: block; font-size: 10px; font-weight: 400; color: var(--fg-dim); }
+.s-mt { padding: 8px 8px 10px; }
+.s-mt .ch-title { display: flex; align-items: center; gap: 6px; }
+.s-mt-seg { margin-left: auto; }
+.s-mt-row { display: grid; gap: 2px; align-items: center; font-size: 11px; padding: 5px 2px; border-bottom: 1px solid var(--line); }
+.s-mt-row .num, .s-mt-head span { text-align: right; }
+.s-mt-row .wa-who { font-size: 11px; padding: 0 4px; margin-right: 0; justify-self: start; max-width: 62px; overflow: hidden; text-overflow: ellipsis; }
+.s-mt-head { color: var(--fg-dim); font-size: 10px; }
+.s-mt-head small { display: block; font-size: 9px; }
+.s-mt-row.is-sum { font-weight: 700; background: var(--gold-soft); border-bottom: 0; }
+.s-mt-seg button { white-space: nowrap; padding: 4px 8px; font-size: 12px; }
