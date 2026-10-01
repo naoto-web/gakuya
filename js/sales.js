@@ -92,7 +92,7 @@ var SALES = (function () {
   function deltaLabel(ym) { return partialDay(ym) ? '先月同期比' : '先月比'; }
 
   // ── 的中（9/30 Naoto①）＝配信コンソールの予想を配信画面と同じ判定にかけた数字。8/14〜 ──
-  var H = { who: 0, day: 1, slot: 2, waku: 3, note: 4, settled: 5, hit: 6, inv: 7, ref: 8, g: 9 };   // g＝10/1〜 グレード開催のレース
+  var H = { who: 0, day: 1, slot: 2, waku: 3, note: 4, settled: 5, hit: 6, inv: 7, ref: 8, g: 9, kind: 10 };   // 10/1〜 g＝グレード開催のレース／kind＝チャレンジ・ガールズ
   function hitStats(ym, who, maxDay) {
     var rows = ((st.hits || {})[ym] || []).filter(function (r) { return r[H.who] === who && (!maxDay || r[H.day] <= maxDay); });
     if (!rows.length) return null;
@@ -150,11 +150,16 @@ var SALES = (function () {
     var all = hitStats(ym, who), inT = rows.reduce(function (a, x) { return a + x.n; }, 0), miss = all ? all.settled - inT : 0;
     return hitTable('時間帯別の成績', '確定したレースだけ' + (miss > 0 ? '・時間帯の分からない' + miss + 'レースは入れていない' : ''), rows);
   }
-  // 🆕10/1 Naoto「グレードの的中率・回収率」＝グレード（G3以上）の開催のレースとそれ以外（チャレンジ・ガールズは区分のデータがそろったら足す）
+  // 🆕10/1 Naoto「グレード・チャレンジ・ガールズの的中率・回収率」
+  //   1レースは1つの行にだけ入れる＝ガールズ→チャレンジ→グレード（G3以上の開催）→それ以外の順に当てはめる
+  //   （グレード開催の中のガールズのレースはガールズに入る）。区分＝競輪予想のレースDB（keirin.jp の公式の区分）
   function kindTable(ym, who) {
     var rows = ((st.hits || {})[ym] || []);
     if (!rows.length || rows[0].length <= H.g) return '';   // 前のデータ（G の列が無い）のときは出さない
-    return hitTable('レースの種類別の成績', 'グレード＝G3以上の開催', hitBy(ym, who, function (r) { return r[H.g] === 'G' ? 'グレード' : 'それ以外'; }, ['グレード', 'それ以外']));
+    var hasKind = rows[0].length > H.kind;
+    return hitTable('レースの種類別の成績', 'グレード＝G3以上の開催（その中のガールズはガールズに入れる）', hitBy(ym, who, function (r) {
+      return hasKind && r[H.kind] ? r[H.kind] : r[H.g] === 'G' ? 'グレード' : 'それ以外';
+    }, ['グレード', 'チャレンジ', 'ガールズ', 'それ以外']));
   }
 
   // ── 購入者数（9/30 Naoto③）＝人数だけ（名前は持っていない）。🔄同日 配信者にも本人分は見せる（本人のnoteから数えた本人の客の人数）＝GASが本人の行だけ返す ──
