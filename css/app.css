@@ -1270,3 +1270,7 @@ html.rc-lock, html.rc-lock body { overflow: hidden; }
 .s-mt-head small { display: block; font-size: 9px; }
 .s-mt-row.is-sum { font-weight: 700; background: var(--gold-soft); border-bottom: 0; }
 .s-mt-seg button { white-space: nowrap; padding: 4px 8px; font-size: 12px; }
+
+/* 区分ごとの成績の表（10/1 時間帯別・あとでグレード等も） */
+.s-hitby .s-br { grid-template-columns: 96px 1fr 1fr 1fr; }
+.s-hitby .s-k3-title { margin-bottom: 4px; }
