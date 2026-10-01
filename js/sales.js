@@ -147,7 +147,8 @@ var SALES = (function () {
       }).join('') + '</div>';
   }
   function wakuTable(ym, who) {
-    var rows = hitBy(ym, who, function (r) { return WAKU_NAME[r[H.waku]] || null; }, ['モーニング', 'デイ', 'ナイター', 'ミッド']);
+    // 🔄10/2 Naoto「時間帯別も全部出す・『ない』も分かるように」＝実績の無い時間帯も「—」で出す
+    var rows = hitBy(ym, who, function (r) { return WAKU_NAME[r[H.waku]] || null; }, ['モーニング', 'デイ', 'ナイター', 'ミッド'], true);
     // 時間帯が分からないレース（同じ日に同じ場で区分が2つある等）は表に入れない＝数を注記に出す
     var all = hitStats(ym, who), inT = rows.reduce(function (a, x) { return a + x.n; }, 0), miss = all ? all.settled - inT : 0;
     return hitTable('時間帯別の成績', '確定したレースだけ' + (miss > 0 ? '・時間帯の分からない' + miss + 'レースは入れていない' : ''), rows);
