@@ -1252,3 +1252,7 @@ html.rc-lock, html.rc-lock body { overflow: hidden; }
 .push-bar .link-btn { flex: none; font-size: 16px; padding: 0 4px; color: var(--fg-dim); text-decoration: none; }
 .push-card p { margin: 0 0 8px; font-size: 13px; line-height: 1.6; }
 .push-card .btn { justify-self: start; }
+
+/* 共有タブの削除（10/1・管理者は全部／配信者は自分の投稿・要望） */
+.sh-delrow { display: flex; justify-content: flex-end; margin-top: 4px; }
+.sh-del { color: var(--ng) !important; font-size: 12px; }
