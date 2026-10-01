@@ -1274,3 +1274,4 @@ html.rc-lock, html.rc-lock body { overflow: hidden; }
 /* 区分ごとの成績の表（10/1 時間帯別・あとでグレード等も） */
 .s-hitby .s-br { grid-template-columns: 96px 1fr 1fr 1fr; }
 .s-hitby .s-k3-title { margin-bottom: 4px; }
+.s-hitby .s-br.is-none { color: var(--fg-faint); }   /* 10/2 実績の無い区分（数字は「—」） */
