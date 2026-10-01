@@ -12,12 +12,25 @@ var SHARE = (function () {
   function acls(a) { return 'sh-a sh-a-' + (ACLS[a] || 'mid'); }
   function alabel(d) { return u.esc((d && d.adminLabel) || '管理者'); }
 
-  function load(quiet) {
-    if (st.loading) return;
-    st.loading = true; if (!quiet) draw();
-    API.share().then(function (d) { st.data = d; st.err = ''; }, function (e) { st.err = e.code || 'net'; })
-      .then(function () { st.loading = false; draw(); badge(); });
+  // 🔄10/1 Naoto「共有タブがずっと読み込み中」＝GAS（Google側）がときどき1分以上かかる（実測87秒・ふだんは2〜4秒）
+  //   ①前回の中身を端末に控え、開いたらすぐそれを出す（裏で最新を取って差し替える）
+  //   ②「最新にする」は読み込み中でも新しく取り直す（古い方の返事は捨てる）③タブを開き直したら1分以上前のものは裏で取り直す
+  var LS = 'gakuya:share:' + (CONFIG.KEY || '').slice(0, 6) + ':' + (CONFIG.AS || '');
+  var seq = 0;
+  try { var c0 = JSON.parse(localStorage.getItem(LS) || 'null'); if (c0 && c0.d) { st.data = c0.d; st.at = c0.at; st.cached = true; } } catch (e) { /* 控えが無くても読む */ }
+  function load(quiet, force) {
+    if (st.loading && !force) return;
+    var my = ++seq;
+    st.loading = true; st.slow = false; if (!quiet) draw();
+    setTimeout(function () { if (my === seq && st.loading) { st.slow = true; draw(); } }, 15000);
+    API.share().then(function (d) {
+      if (my !== seq) return;
+      st.data = d; st.err = ''; st.cached = false; st.at = Date.now();
+      try { localStorage.setItem(LS, JSON.stringify({ d: d, at: st.at })); } catch (e) { /* 控えられなくても表示は続ける */ }
+    }, function (e) { if (my === seq) st.err = e.code || 'net'; })
+      .then(function () { if (my !== seq) return; st.loading = false; st.slow = false; draw(); badge(); });
   }
+  function ago(t) { var m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'さっき' : m < 60 ? m + '分前' : Math.round(m / 60) + '時間前'; }
   // 下のタブの赤丸＝自分が対象でまだ答えていない数
   function badge() {
     var n = st.data ? st.data.todo : 0;
@@ -143,8 +156,12 @@ var SHARE = (function () {
     if (APP.current() !== 'share') return;
     var el = document.getElementById('view');
     var d = st.data;
+    // 読み込み中も「最新にする」は押せる（押すと取り直す）
     var head = '<div class="title-row"><h1 class="screen-title">共有</h1><span class="title-aside">' +
-      '<button type="button" class="link-btn" id="sh-reload">' + (st.loading ? '読み込み中…' : '最新にする') + '</button></span></div>';
+      (st.loading ? '読み込み中… ' : st.cached && st.at ? ago(st.at) + 'の内容 ' : '') +
+      '<button type="button" class="link-btn" id="sh-reload">最新にする</button></span></div>' +
+      (st.slow ? '<p class="fresh">時間がかかっています（Google側の混み具合で、ときどき1分ほどかかります）。' + (d ? '前回の内容を出しています。' : '') + '待つか「最新にする」を押してください。</p>' : '') +
+      (st.err && d ? '<p class="fresh">最新を読み込めませんでした。前回の内容を出しています。</p>' : '');
     if (!d) { el.innerHTML = head + '<p class="sub">' + (st.err ? 'つながりませんでした。「最新にする」を押してください。' : '読み込んでいます…') + '</p>'; bind(el); return; }
     var posts = d.posts.filter(function (p) { return st.showHidden || !p.hidden; });
     var todo = posts.filter(function (p) { return p.target && !p.mine && !p.hidden; });
@@ -162,7 +179,7 @@ var SHARE = (function () {
   function bind(el) {
     var q = function (s) { return el.querySelector(s); };
     var on = function (s, f) { var x = q(s); if (x) x.addEventListener('click', f); };
-    on('#sh-reload', function () { load(); });
+    on('#sh-reload', function () { load(false, true); });
     on('#sh-new', function () { st.form = true; draw(); var t = q('#sh-title'); if (t) t.focus(); });
     on('#sh-cancel', function () { st.form = false; draw(); });
     // 種類の切り替え（書きかけの題・内容・期限は残す）
@@ -222,7 +239,10 @@ var SHARE = (function () {
   }
 
   return {
-    render: function () { if (!st.data && !st.loading) load(); else draw(); },
+    render: function () {
+      if (!st.loading && (!st.data || st.cached || !st.at || Date.now() - st.at > 60000)) load(!!st.data);
+      draw();
+    },
     // 起動時に1回読んで赤丸を出す（タブを開いていなくても）
     init: function () { load(true); },
     badge: badge
