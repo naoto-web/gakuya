@@ -95,6 +95,8 @@ var SHARE = (function () {
       }
     }
     h += detailBox(p, d);
+    // 🆕10/1 削除（管理者＝全部／配信者＝自分の投稿だけ・プレビュー中は出さない）
+    if ((d.admin || p.mineBy) && !d.preview) h += '<div class="sh-delrow"><button type="button" class="link-btn sh-del" data-del="post" data-id="' + p.id + '">削除</button></div>';
     return h + '</div>';
   }
 
@@ -117,7 +119,7 @@ var SHARE = (function () {
     var list = d.decisions.filter(function (x) { return st.showHidden || !x.hidden; });
     return '<div class="card sh-dec"><h3>決定事項</h3>' + (list.length ? '<ul class="sh-declist">' + list.map(function (x) {
       return '<li' + (x.hidden ? ' class="is-hidden"' : '') + '><p>' + u.esc(x.text).replace(/\n/g, '<br>') + '</p><small>' + when(x.at) + (x.postTitle ? '・「' + u.esc(x.postTitle) + '」から' : '') +
-        (d.admin ? '・' + u.esc(x.by) + ' <button type="button" class="link-btn" data-hdec="' + x.id + '" data-on="' + (x.hidden ? '' : '1') + '">' + (x.hidden ? '戻す' : '非表示') + '</button>' : '') + '</small></li>';
+        (d.admin ? '・' + u.esc(x.by) + ' <button type="button" class="link-btn" data-hdec="' + x.id + '" data-on="' + (x.hidden ? '' : '1') + '">' + (x.hidden ? '戻す' : '非表示') + '</button> <button type="button" class="link-btn sh-del" data-del="decision" data-id="' + x.id + '">削除</button>' : '') + '</small></li>';
     }).join('') + '</ul>' : '<p class="sub">まだありません。</p>') +
       (d.admin ? '<button type="button" class="link-btn sh-decnew" data-decide="">＋ 決定事項を直接書く</button>' : '') + '</div>';
   }
@@ -131,7 +133,9 @@ var SHARE = (function () {
         return '<li><div class="sh-reqhead"><span class="sh-st sh-st-' + d.reqStates.indexOf(r.state) + '">' + u.esc(r.state) + '</span><small>' + (d.admin ? u.esc(r.who) + '・' : '') + when(r.at) + '</small></div>' +
           '<p>' + u.esc(r.text).replace(/\n/g, '<br>') + '</p>' + (r.reply ? '<p class="sh-reply">返事：' + u.esc(r.reply) + '</p>' : '') +
           (d.admin ? '<div class="sh-row"><select class="date-input sh-rs" data-rid="' + r.id + '">' + d.reqStates.map(function (s) { return '<option' + (s === r.state ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>' +
-            '<button type="button" class="link-btn" data-reply="' + r.id + '">返事を書く</button></div>' : '') + '</li>';
+            '<button type="button" class="link-btn" data-reply="' + r.id + '">返事を書く</button></div>' : '') +
+          // 🆕10/1 削除（配信者に返る要望は本人の分だけ＝出ているものは消してよい）
+          (!d.preview ? '<div class="sh-delrow"><button type="button" class="link-btn sh-del" data-del="request" data-id="' + r.id + '">削除</button></div>' : '') + '</li>';
       }).join('') + '</ul>' : '') + '</div>';
   }
 
@@ -188,6 +192,13 @@ var SHARE = (function () {
       b.addEventListener('click', function () {
         var t = window.prompt(b.dataset.decide ? '決定事項（結論を一文で）' : '決定事項を書く（全員に見えます）');
         if (t && t.trim()) send({ op: 'decide', id: b.dataset.decide || '', text: t }, '決定事項に載せました');
+      });
+    });
+    el.querySelectorAll('[data-del]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.dataset.del;
+        var msg = k === 'post' ? 'この投稿を削除します。みんなの回答も一緒に消えます（決定事項は残ります）。' : k === 'decision' ? 'この決定事項を削除します。' : 'この要望を削除します。';
+        if (window.confirm(msg + '\n元に戻せません。削除しますか？')) send({ op: 'delete', kind: k, id: b.dataset.id }, '削除しました');
       });
     });
     el.querySelectorAll('[data-hdec]').forEach(function (b) {
