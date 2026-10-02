@@ -51,14 +51,15 @@ var PL = (function () {
       var pend = 0, pendYen = 0;
       d.people.forEach(function (p) { pend += p.unsettled || 0; pendYen += p.pending || 0; });
       body =
-        '<p class="sub">' + md(d.asof) + '現在の月の累計' + (d.updatedAt ? '・OBS ' + u.stamp(d.updatedAt) + ' 時点' : '') +
+        // 🔄10/3 Naoto「配信中は前日までの集計に」＝文面は前日（asof）までの月の累計。今日の配信の分は翌日に入る
+        '<p class="sub">' + md(d.asof) + 'までの月の累計（今日の配信分は明日から入ります）' +
           (st.cached ? '（前回の控え）' : '') + (st.loading ? '・読み込み中…' : '') + '</p>' +
         '<textarea class="pl-text" id="pl-text" readonly rows="9" spellcheck="false">' + u.esc(d.text) + '</textarea>' +
         '<div class="btn-row"><button type="button" class="btn" data-pl-copy>文面をコピー</button>' +
           '<button type="button" class="btn ghost" data-pl-reload' + (st.loading ? ' disabled' : '') + '>最新にする</button></div>' +
         (pend ? '<p class="pl-warn">⚠️ 結果がまだ入っていないレースが ' + pend + ' レース（投資 ' + yen(pendYen) + '）。結果が入ると数字が変わります。</p>' : '') +
-        '<details class="pl-today"><summary>今日（' + md(d.asof) + '）の分を見る</summary>' + todayTable(d) + '</details>' +
-        '<p class="fresh">数字＝OBSに入れた予想の投資と払戻の合計（結果が入ったレースだけ・その月の累計）。コピーしたら、YouTubeの「投稿」タブで今月の収支発表を開いて本文を貼り替えてください。</p>';
+        '<details class="pl-today"><summary>今日（' + md(d.today || d.asof) + '）の途中経過を見る（文面には入りません）</summary>' + todayTable(d) + '</details>' +
+        '<p class="fresh">数字＝OBSに入れた予想の投資と払戻の合計（結果が入ったレースだけ・前日までのその月の累計）。コピーしたら、YouTubeの「投稿」タブで今月の収支発表を開いて本文を貼り替えてください。</p>';
     }
     return '<div class="card pl-card" id="pl-card"><div class="pr-cap">💴 収支発表（投稿用）</div>' + body + '</div>';
   }
