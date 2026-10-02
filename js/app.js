@@ -37,8 +37,13 @@ var APP = (function () {
     var t = TABS.filter(function (x) { return x.id === tab; })[0];
     var view = document.getElementById('view');
     if (t.id === 'shift') { SHIFT.render(); return; }
-    // ホーム＝🆕10/1 通知のカード（push.js）＋準備中の案内
-    if (t.id === 'home') { view.innerHTML = '<h1 class="screen-title">ホーム</h1>' + (window.PUSH ? PUSH.homeCard() : '') + '<div class="card"><span class="pill dim" style="justify-self:start">準備中</span><p>' + t.soon + '</p></div>'; return; }
+    // ホーム＝🆕10/2 収支発表（投稿用）のカード（pl.js）＋🆕10/1 通知のカード（push.js）＋準備中の案内
+    if (t.id === 'home') {
+      var pl = window.PL && PL.can(me);
+      view.innerHTML = '<h1 class="screen-title">ホーム</h1>' + (pl ? PL.card() : '') + (window.PUSH ? PUSH.homeCard() : '') + '<div class="card"><span class="pill dim" style="justify-self:start">準備中</span><p>' + t.soon + '</p></div>';
+      if (pl) PL.mounted();   // 置いてから読む（1分以内に読んだものがあればそのまま）
+      return;
+    }
     if (t.id === 'share') { SHARE.render(); return; }
     // 実績＝note売上（sales.js・9/30〜）。見せてよいかはGASが決める（配信者は本人分だけ・閉じている間は準備中）
     //   🆕10/1 管理者だけ［売上｜出演］＝出演ログ（presence.js）
