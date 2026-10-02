@@ -1275,3 +1275,16 @@ html.rc-lock, html.rc-lock body { overflow: hidden; }
 .s-hitby .s-br { grid-template-columns: 96px 1fr 1fr 1fr; }
 .s-hitby .s-k3-title { margin-bottom: 4px; }
 .s-hitby .s-br.is-none { color: var(--fg-faint); }   /* 10/2 実績の無い区分（数字は「—」） */
+
+/* ── 💴 収支発表（投稿用）＝ホームのカード（pl.js・10/2）── */
+.pl-card { gap: 8px; }
+.pl-text { width: 100%; box-sizing: border-box; resize: vertical; font: 14px/1.6 "Zen Kaku Gothic New", sans-serif; color: var(--fg); background: var(--sunk); border: 1px solid var(--line2); border-radius: 8px; padding: 8px 10px; -webkit-user-select: text; user-select: text; }
+.pl-warn { margin: 0; font-size: 12px; color: var(--ng); line-height: 1.5; }
+.pl-today summary { font-size: 12px; color: var(--fg-dim); cursor: pointer; }
+.pl-tbl { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+.pl-tbl th, .pl-tbl td { padding: 4px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.pl-tbl th { color: var(--fg-dim); font-size: 11px; font-weight: 700; }
+.pl-tbl th:first-child, .pl-tbl td:first-child { text-align: left; }
+.pl-tbl td small { font-size: 10px; color: var(--fg-faint); }
+.pl-tbl .plus { color: var(--ok); font-weight: 700; }
+.pl-tbl .minus { color: var(--ng); font-weight: 700; }
