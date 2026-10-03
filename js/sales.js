@@ -106,6 +106,10 @@ var SALES = (function () {
     s.back = s.inv ? s.ref / s.inv * 100 : null;
     s.nRate = s.nSettled ? s.nHit / s.nSettled * 100 : null;
     s.nBack = s.nInv ? s.nRef / s.nInv * 100 : null;   // 10/1 Yの要望「note回収率」
+    // 🆕10/3 配信者の要望（共有タブ）「ライブ予想とnote予想は別で」＝ライブ予想＝note記事でない予想（全部−note）
+    s.lSettled = s.settled - s.nSettled; s.lHit = s.hit - s.nHit; s.lInv = s.inv - s.nInv; s.lRef = s.ref - s.nRef;
+    s.lRate = s.lSettled ? s.lHit / s.lSettled * 100 : null;
+    s.lBack = s.lInv ? s.lRef / s.lInv * 100 : null;
     return s;
   }
   // 見出しの期間＝その月に予想データがある最初の日〜最後の日（チーム全体）。🔄9/30 Naoto「9月なのにスタートが8/14」
@@ -347,9 +351,12 @@ var SALES = (function () {
       '<div class="s-k"><small>1記事あたり</small><b class="num">' + per(s.total, s.arts) + '</b><small>' + (s.arts ? (s.n / s.arts).toFixed(1) + '件/本' : '') + '</small>' + dl(p && s.arts && p.arts && delta(s.total / s.arts, p.total / p.arts, 'pct')) + '</div></div>' +
       // 予想の成績（配信コンソールの予想・8/14〜）
       // 🔄10/1 Yの要望＝note回収率を足して2×2（上＝全部の予想／下＝note記事だけ）
+      // 🔄10/3 配信者の要望（共有タブ）＝間にライブ予想（noteでない予想）の段を足して3段（全部／ライブ／note）
       '<div class="card s-kpi s-kpi3 s-kpi2x2" style="--mc:' + colorOf(who) + '"><div class="s-k3-title">予想の成績<small>配信コンソールの予想' + hitRangeLabel(st.ym) + '</small></div>' +
       (hs ? '<div class="s-k"><small>的中率</small><b class="num">' + pct1(hs.rate) + '</b><small>' + hs.hit + '/' + hs.settled + 'レース</small>' + dlH(hp && delta(hs.rate, hp.rate, 'pt')) + '</div>' +
         '<div class="s-k"><small>回収率</small><b class="num">' + pct1(hs.back) + '</b><small>回収 ' + yen(hs.ref) + '</small>' + dlH(hp && delta(hs.back, hp.back, 'pt')) + '</div>' +
+        '<div class="s-k"><small>ライブ予想の的中率</small><b class="num">' + pct1(hs.lRate) + '</b><small>' + hs.lHit + '/' + hs.lSettled + 'レース</small>' + dlH(hp && delta(hs.lRate, hp.lRate, 'pt')) + '</div>' +
+        '<div class="s-k"><small>ライブ予想の回収率</small><b class="num">' + pct1(hs.lBack) + '</b><small>回収 ' + yen(hs.lRef) + '</small>' + dlH(hp && delta(hs.lBack, hp.lBack, 'pt')) + '</div>' +
         '<div class="s-k"><small>note記事の的中率</small><b class="num">' + pct1(hs.nRate) + '</b><small>' + hs.nHit + '/' + hs.nSettled + 'レース</small>' + dlH(hp && delta(hs.nRate, hp.nRate, 'pt')) + '</div>' +
         '<div class="s-k"><small>note記事の回収率</small><b class="num">' + pct1(hs.nBack) + '</b><small>回収 ' + yen(hs.nRef) + '</small>' + dlH(hp && delta(hs.nBack, hp.nBack, 'pt')) + '</div>'
         : '<p class="sub">' + (st.all ? 'この月の予想データはありません（8/14から）' : '読み込み中…') + '</p>') + '</div>' +
